@@ -1,0 +1,17 @@
+---
+- name: Include vars
+  ansible.builtin.include_vars: ../../onepassword/vars/main.yml
+
+- name: Install apt repo
+  tags: 1password
+  become: true
+  ansible.builtin.import_tasks:
+    file: ../../onepassword/tasks/apt.yml
+
+- name: Install 1password cli
+  tags: 1password
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - 1password-cli

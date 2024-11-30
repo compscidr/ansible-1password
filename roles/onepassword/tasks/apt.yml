@@ -1,0 +1,18 @@
+---
+- name: Install 1password apt keys
+  tags: 1password
+  become: true
+  ansible.builtin.apt_key:
+    url: https://downloads.1password.com/linux/keys/1password.asc
+    id: 3FEF9748469ADBE15DA7CA80AC2D62742012EA22
+    state: present
+    keyring: /usr/share/keyrings/1password-archive-keyring.gpg
+
+- name: Install 1password repo
+  tags: 1password
+  become: true
+  ansible.builtin.apt_repository:
+    repo: >
+      deb [arch={{ [ansible_architecture] | map('extract', onepassword_deb_architecture) | first }} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg]
+      https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', onepassword_deb_architecture) | first }} stable main
+    state: present
