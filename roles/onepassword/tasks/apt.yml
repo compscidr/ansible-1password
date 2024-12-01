@@ -16,3 +16,4 @@
       deb [arch={{ [ansible_architecture] | map('extract', onepassword_deb_architecture) | first }} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg]
       https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', onepassword_deb_architecture) | first }} stable main
     state: present
+    filename: 1password
