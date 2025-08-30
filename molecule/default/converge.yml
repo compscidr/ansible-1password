@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: Include onepassword role
+      ansible.builtin.include_role:
+        name: onepassword
+
+    - name: Include onepassword_cli role  
+      ansible.builtin.include_role:
+        name: onepassword_cli

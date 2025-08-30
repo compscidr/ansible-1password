@@ -1,0 +1,18 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: geerlingguy/docker-ubuntu2004-ansible
+    pre_build_image: true
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      allow_broken_conditionals: true
+  env:
+    ANSIBLE_ROLES_PATH: ../../roles
+verifier:
+  name: ansible
