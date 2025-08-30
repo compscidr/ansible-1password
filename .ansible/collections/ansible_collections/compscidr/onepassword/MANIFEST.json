@@ -1,0 +1,32 @@
+{
+ "collection_info": {
+  "namespace": "compscidr",
+  "name": "onepassword",
+  "version": "0.0.2",
+  "authors": [
+   "Jason Ernst <ernstjason1@gmail.com>"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "onepassword",
+   "cli",
+   "tools"
+  ],
+  "description": "Installs 1password and 1password cli",
+  "license": [],
+  "license_file": "LICENSE",
+  "dependencies": {},
+  "repository": "https://github.com/compscidr/ansible-1password",
+  "documentation": null,
+  "homepage": null,
+  "issues": null
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "0feae9eef98188a480cc8cbf84384a0344039579187c42550db4df6b7b89fd29",
+  "format": 1
+ },
+ "format": 1
+}
