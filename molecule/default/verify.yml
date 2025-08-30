@@ -1,0 +1,43 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check 1password package is installed
+      ansible.builtin.command: dpkg-query -W 1password
+      register: onepassword_pkg_result
+      changed_when: false
+      failed_when: onepassword_pkg_result.rc != 0
+
+    - name: Show 1password package version
+      ansible.builtin.debug:
+        var: onepassword_pkg_result.stdout
+
+    - name: Check 1password-cli package is installed
+      ansible.builtin.command: dpkg-query -W 1password-cli
+      register: onepassword_cli_pkg_result
+      changed_when: false
+      failed_when: onepassword_cli_pkg_result.rc != 0
+
+    - name: Show 1password-cli package version
+      ansible.builtin.debug:
+        var: onepassword_cli_pkg_result.stdout
+
+    - name: Verify op command is available
+      ansible.builtin.command: which op
+      register: op_command_result
+      changed_when: false
+      failed_when: op_command_result.rc != 0
+
+    - name: Show op command location
+      ansible.builtin.debug:
+        var: op_command_result.stdout
+
+    - name: Verify op command version
+      ansible.builtin.command: op --version
+      register: op_version_result
+      changed_when: false
+      
+    - name: Show op version
+      ansible.builtin.debug:
+        var: op_version_result.stdout

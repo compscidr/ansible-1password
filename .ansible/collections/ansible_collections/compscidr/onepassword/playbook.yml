@@ -1,5 +1,0 @@
-- name: Install 1password
-  hosts: all
-  roles:
-    - onepassword
-    - onepassword_cli
