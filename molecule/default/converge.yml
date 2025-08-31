@@ -3,12 +3,14 @@
   hosts: all
   gather_facts: yes
   tasks:
-    - name: Include onepassword role (check mode)
+    - name: Include onepassword role
       ansible.builtin.include_role:
         name: onepassword
-      check_mode: yes
+      vars:
+        onepassword_skip_install: true
 
-    - name: Include onepassword_cli role (check mode)
+    - name: Include onepassword_cli role
       ansible.builtin.include_role:
         name: onepassword_cli
-      check_mode: yes
+      vars:
+        onepassword_skip_install: true

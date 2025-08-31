@@ -12,3 +12,4 @@
     update_cache: true
     name: 1password
     state: present
+  when: not (onepassword_skip_install | default(false))

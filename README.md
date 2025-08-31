@@ -42,9 +42,6 @@ source venv/bin/activate
 # Install testing dependencies
 pip install -r molecule/requirements.txt
 
-# Install required Ansible collections
-ansible-galaxy collection install community.docker:>=3.10.2 ansible.posix:>=1.4.0
-
 # Run ansible-lint
 ansible-lint .
 
@@ -52,4 +49,4 @@ ansible-lint .
 molecule test
 ```
 
-**Note**: Molecule tests require Docker and internet access to download collections from Galaxy. Ensure Docker is running before executing molecule tests.
+**Note**: Molecule tests use the default driver for local testing and automatically skip network-dependent operations during testing.

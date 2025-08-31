@@ -3,11 +3,9 @@ dependency:
   name: galaxy
   enabled: false
 driver:
-  name: docker
+  name: default
 platforms:
   - name: instance
-    image: geerlingguy/docker-ubuntu2004-ansible
-    pre_build_image: true
 provisioner:
   name: ansible
   config_options:
@@ -15,5 +13,15 @@ provisioner:
       allow_broken_conditionals: true
   env:
     ANSIBLE_ROLES_PATH: ../../roles
+    ANSIBLE_HOST_KEY_CHECKING: false
+  inventory:
+    hosts:
+      all:
+        hosts:
+          instance:
+            ansible_connection: local
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml
 verifier:
   name: ansible

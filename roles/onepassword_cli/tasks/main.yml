@@ -15,3 +15,4 @@
     update_cache: true
     pkg:
       - 1password-cli
+  when: not (onepassword_skip_install | default(false))

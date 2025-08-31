@@ -7,6 +7,7 @@
     id: 3FEF9748469ADBE15DA7CA80AC2D62742012EA22
     state: present
     keyring: /usr/share/keyrings/1password-archive-keyring.gpg
+  when: not (onepassword_skip_install | default(false))
 
 - name: Install 1password repo
   tags: 1password
@@ -17,3 +18,4 @@
       https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', onepassword_deb_architecture) | first }} stable main
     state: present
     filename: 1password
+  when: not (onepassword_skip_install | default(false))

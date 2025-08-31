@@ -41,10 +41,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r molecule/requirements.txt
           
-      - name: Install required collections
-        run: |
-          ansible-galaxy collection install community.docker:>=3.10.2 ansible.posix:>=1.4.0
-          
       - name: Run molecule tests
         run: molecule test
         env:

@@ -6,3 +6,6 @@ onepassword_deb_architecture: {
     "x86_64": "amd64",
     "i386": "i386"
 }
+
+# For testing - skip actual package installation
+onepassword_skip_install: false
