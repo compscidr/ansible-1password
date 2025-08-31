@@ -1,6 +1,5 @@
----
 # Requirements file for molecule tests
-# Install with: pip install -r requirements.yml
+# Install with: pip install -r requirements.txt
 
 # Python packages
 molecule[docker]>=25.0.0
