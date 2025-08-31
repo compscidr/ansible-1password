@@ -15,8 +15,8 @@ jobs:
           working_directory: ""
           requirements_file: ""
           
-  integration-test:
-    name: Integration Tests
+  molecule-test:
+    name: Molecule Tests
     runs-on: ubuntu-latest
     
     steps:
@@ -41,19 +41,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r molecule/requirements.txt
           
-      - name: Run local integration tests
+      - name: Install required collections
         run: |
-          chmod +x test-local.sh
-          ./test-local.sh
-        env:
-          PY_COLORS: '1'
-          ANSIBLE_FORCE_COLOR: '1'
+          ansible-galaxy collection install community.docker:>=3.10.2 ansible.posix:>=1.4.0
           
-      - name: Run molecule tests (if network available)
-        run: |
-          # Try molecule test, but don't fail the job if it fails due to network issues
-          molecule test || echo "⚠️ Molecule tests skipped due to network restrictions"
+      - name: Run molecule tests
+        run: molecule test
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
-        continue-on-error: true

@@ -27,23 +27,29 @@ Note, you can install just the CLI if you don't want the GUI version of 1passwor
 ## Development
 
 This collection includes automated testing with:
-- **Ansible Lint**: Ensures code quality and best practices
-- **Integration Tests**: Local testing for role syntax and structure
-- **Molecule Tests**: Full integration testing using Docker containers (requires network access)
+- **Ansible Lint**: Ensures code quality and best practices  
+- **Molecule Tests**: Integration testing using Docker containers
 
-To run tests locally:
+### Running Tests Locally
+
+To run tests locally using a virtual environment:
+
 ```bash
-# Install dependencies
+# Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install testing dependencies
 pip install -r molecule/requirements.txt
 
-# Run local integration tests (works in all environments)
-./test-local.sh
+# Install required Ansible collections
+ansible-galaxy collection install community.docker:>=3.10.2 ansible.posix:>=1.4.0
 
-# Run full molecule tests (requires network access for dependencies)
-molecule test
-
-# Run only ansible-lint
+# Run ansible-lint
 ansible-lint .
+
+# Run molecule tests
+molecule test
 ```
 
-**Note**: Molecule tests require internet access to download collections from Galaxy. In network-restricted environments (like some CI systems), the local integration tests provide basic syntax and structure validation.
+**Note**: Molecule tests require Docker and internet access to download collections from Galaxy. Ensure Docker is running before executing molecule tests.

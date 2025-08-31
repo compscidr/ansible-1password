@@ -1,7 +1,7 @@
 ---
 dependency:
-  name: shell
-  command: echo "Skipping dependency installation"
+  name: galaxy
+  enabled: false
 driver:
   name: docker
 platforms:
