@@ -3,10 +3,38 @@
   hosts: all
   gather_facts: false
   tasks:
-    - name: Verify roles ran successfully
-      ansible.builtin.debug:
-        msg: "Ansible roles executed successfully during converge phase"
+    - name: Check if 1password package is installed
+      ansible.builtin.command:
+        cmd: dpkg -l 1password
+      register: onepassword_package_check
+      changed_when: false
+      failed_when: onepassword_package_check.rc != 0
 
-    - name: Check if role variables are accessible
+    - name: Check if 1password-cli package is installed
+      ansible.builtin.command:
+        cmd: dpkg -l 1password-cli
+      register: onepassword_cli_package_check
+      changed_when: false
+      failed_when: onepassword_cli_package_check.rc != 0
+
+    - name: Verify 1password package installation
       ansible.builtin.debug:
-        msg: "Testing completed - roles are syntactically correct and executable"
+        msg: "1Password package is correctly installed"
+      when: onepassword_package_check.rc == 0
+
+    - name: Verify 1password-cli package installation
+      ansible.builtin.debug:
+        msg: "1Password CLI package is correctly installed"
+      when: onepassword_cli_package_check.rc == 0
+
+    - name: Check if op command is available
+      ansible.builtin.command:
+        cmd: which op
+      register: op_command_check
+      changed_when: false
+      failed_when: op_command_check.rc != 0
+
+    - name: Verify op command is available
+      ansible.builtin.debug:
+        msg: "1Password CLI (op) command is available at {{ op_command_check.stdout }}"
+      when: op_command_check.rc == 0

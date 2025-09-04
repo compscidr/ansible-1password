@@ -28,7 +28,7 @@ Note, you can install just the CLI if you don't want the GUI version of 1passwor
 
 This collection includes automated testing with:
 - **Ansible Lint**: Ensures code quality and best practices  
-- **Molecule Tests**: Integration testing using Docker containers
+- **Molecule Tests**: Full integration testing using Docker containers
 
 ### Running Tests Locally
 
@@ -42,11 +42,17 @@ source venv/bin/activate
 # Install testing dependencies
 pip install -r molecule/requirements.txt
 
+# Install required Ansible collections for Docker support
+ansible-galaxy collection install community.docker
+
 # Run ansible-lint
 ansible-lint .
 
-# Run molecule tests
+# Run molecule tests (requires Docker)
 molecule test
 ```
 
-**Note**: Molecule tests use the default driver for local testing and automatically skip network-dependent operations during testing.
+**Requirements**: 
+- Docker or Podman must be installed and running
+- Internet access for downloading container images and 1Password packages
+- The molecule tests perform full integration testing by actually installing 1Password in isolated containers
