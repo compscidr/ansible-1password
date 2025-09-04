@@ -6,14 +6,12 @@
     path: /usr/share/keyrings
     state: directory
     mode: '0755'
-  when: not (onepassword_skip_install | default(false))
 
 - name: Check if 1password GPG key already exists
   tags: 1password
   ansible.builtin.stat:
     path: /usr/share/keyrings/1password-archive-keyring.gpg
   register: onepassword_keyring_exists
-  when: not (onepassword_skip_install | default(false))
 
 - name: Download 1password GPG key (ASCII)
   tags: 1password
@@ -22,17 +20,13 @@
     url: https://downloads.1password.com/linux/keys/1password.asc
     dest: /tmp/1password.asc
     mode: '0644'
-  when: 
-    - not (onepassword_skip_install | default(false))
-    - not onepassword_keyring_exists.stat.exists
+  when: not onepassword_keyring_exists.stat.exists
 
 - name: Convert GPG key to binary format
   tags: 1password
   become: true
   ansible.builtin.shell: "gpg --dearmor < /tmp/1password.asc > /usr/share/keyrings/1password-archive-keyring.gpg"
-  when: 
-    - not (onepassword_skip_install | default(false))
-    - not onepassword_keyring_exists.stat.exists
+  when: not onepassword_keyring_exists.stat.exists
 
 - name: Remove temporary key file
   tags: 1password
@@ -40,9 +34,7 @@
   ansible.builtin.file:
     path: /tmp/1password.asc
     state: absent
-  when: 
-    - not (onepassword_skip_install | default(false))
-    - not onepassword_keyring_exists.stat.exists
+  when: not onepassword_keyring_exists.stat.exists
 
 - name: Install 1password repo
   tags: 1password
@@ -53,4 +45,3 @@
       https://downloads.1password.com/linux/debian/{{ [ansible_architecture] | map('extract', onepassword_deb_architecture) | first }} stable main
     state: present
     filename: 1password
-  when: not (onepassword_skip_install | default(false))
