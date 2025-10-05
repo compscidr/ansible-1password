@@ -38,3 +38,18 @@
       ansible.builtin.debug:
         msg: "1Password CLI (op) command is available at {{ op_command_check.stdout }}"
       when: op_command_check.rc == 0
+
+    - name: Check if browser support exists
+      ansible.builtin.stat:
+        path: /opt/1Password/1Password-BrowserSupport
+      register: browser_support_check
+
+    - name: Verify browser support installation
+      ansible.builtin.debug:
+        msg: "1Password browser support is installed for Chrome and Firefox extensions"
+      when: browser_support_check.stat.exists
+
+    - name: Fail if browser support is not installed
+      ansible.builtin.fail:
+        msg: "1Password browser support is not installed"
+      when: not browser_support_check.stat.exists
