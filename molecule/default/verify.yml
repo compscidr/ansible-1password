@@ -69,6 +69,25 @@
         msg: "Chrome extension policy file is not installed"
       when: not chrome_policy_check.stat.exists
 
+    - name: Read Chrome policy file
+      ansible.builtin.slurp:
+        src: /etc/opt/chrome/policies/managed/1password.json
+      register: chrome_policy_content
+
+    - name: Parse Chrome policy JSON
+      ansible.builtin.set_fact:
+        chrome_policy_json: "{{ chrome_policy_content['content'] | b64decode | from_json }}"
+
+    - name: Verify Chrome policy has correct structure
+      ansible.builtin.assert:
+        that:
+          - chrome_policy_json.ExtensionSettings is defined
+          - chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'] is defined
+          - chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].installation_mode == 'normal_installed'
+          - chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].update_url is defined
+        fail_msg: "Chrome policy does not have correct structure for 1Password extension"
+        success_msg: "Chrome policy correctly configured for 1Password extension auto-installation"
+
     - name: Check if Firefox policy file exists
       ansible.builtin.stat:
         path: /etc/firefox/policies/policies.json
@@ -83,3 +102,46 @@
       ansible.builtin.fail:
         msg: "Firefox extension policy file is not installed"
       when: not firefox_policy_check.stat.exists
+
+    - name: Read Firefox policy file
+      ansible.builtin.slurp:
+        src: /etc/firefox/policies/policies.json
+      register: firefox_policy_content
+
+    - name: Parse Firefox policy JSON
+      ansible.builtin.set_fact:
+        firefox_policy_json: "{{ firefox_policy_content['content'] | b64decode | from_json }}"
+
+    - name: Verify Firefox policy has correct structure
+      ansible.builtin.assert:
+        that:
+          - firefox_policy_json.policies is defined
+          - firefox_policy_json.policies.ExtensionSettings is defined
+          - firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'] is defined
+          - firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].installation_mode == 'normal_installed'
+          - firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].install_url is defined
+        fail_msg: "Firefox policy does not have correct structure for 1Password extension"
+        success_msg: "Firefox policy correctly configured for 1Password extension auto-installation"
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          1Password Browser Extension Verification
+          ========================================
+          
+          ✓ Chrome Policy Configuration:
+            - Policy file created: {{ chrome_policy_check.stat.exists }}
+            - Extension ID: aeblfdkhhhdcdjpifhhbdiojplfjncoa
+            - Installation mode: normal_installed (user can uninstall)
+            - Update URL: {{ chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].update_url }}
+          
+          ✓ Firefox Policy Configuration:
+            - Policy file created: {{ firefox_policy_check.stat.exists }}
+            - Extension ID: {d634138d-c276-4fc8-924b-40a0ea21d284}
+            - Installation mode: normal_installed (user can uninstall)
+            - Install URL: {{ firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].install_url }}
+          
+          Note: Extensions will be automatically installed when users launch 
+          Chrome or Firefox. The policies are configured correctly and will 
+          trigger automatic extension installation on first browser launch.
