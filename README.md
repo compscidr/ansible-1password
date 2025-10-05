@@ -45,10 +45,10 @@ Note, you can install just the CLI if you don't want the GUI version of 1passwor
 - **onepassword_cli** - Installs the 1Password CLI (op command)
 
 ### Browser Extension Support Roles
-These roles automatically install the 1Password browser extensions using enterprise policies:
+These roles automatically install the 1Password browser extensions using enterprise policies (users can still uninstall if desired):
 
-- **onepassword_chrome** - Automatically installs Chrome browser extension via enterprise policy
-- **onepassword_firefox** - Automatically installs Firefox browser extension via enterprise policy
+- **onepassword_chrome** - Automatically installs Chrome browser extension via enterprise policy (user removable)
+- **onepassword_firefox** - Automatically installs Firefox browser extension via enterprise policy (user removable)
 - **onepassword_safari** - Enables Safari browser extension support (macOS only, extension bundled with app)
 
 Example usage with browser extensions:
