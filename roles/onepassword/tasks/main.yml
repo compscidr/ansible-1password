@@ -4,11 +4,19 @@
   become: true
   ansible.builtin.import_tasks:
     file: apt.yml
+  when: ansible_os_family == "Debian"
 
-- name: Install 1password
+- name: Install 1password on Debian/Ubuntu
   tags: 1password
   become: true
   ansible.builtin.apt:
     update_cache: true
     name: 1password
     state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install 1password on macOS
+  tags: 1password
+  ansible.builtin.import_tasks:
+    file: homebrew.yml
+  when: ansible_os_family == "Darwin"

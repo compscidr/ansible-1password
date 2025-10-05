@@ -5,6 +5,10 @@
 
 Ansible collection to install 1password and 1password cli.
 
+## Supported Platforms
+- Ubuntu (18.04, 20.04, 22.04, 24.04)
+- macOS (via Homebrew)
+
 ## Usage:
 Add the collection to your meta/requirements.yml:
 ```

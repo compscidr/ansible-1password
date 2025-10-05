@@ -1,17 +1,26 @@
 ---
 - name: Include vars
   ansible.builtin.include_vars: ../../onepassword/vars/main.yml
+  when: ansible_os_family == "Debian"
 
 - name: Install apt repo
   tags: 1password
   become: true
   ansible.builtin.import_tasks:
     file: ../../onepassword/tasks/apt.yml
+  when: ansible_os_family == "Debian"
 
-- name: Install 1password cli
+- name: Install 1password cli on Debian/Ubuntu
   tags: 1password
   become: true
   ansible.builtin.apt:
     update_cache: true
     pkg:
       - 1password-cli
+  when: ansible_os_family == "Debian"
+
+- name: Install 1password cli on macOS
+  tags: 1password
+  ansible.builtin.import_tasks:
+    file: homebrew.yml
+  when: ansible_os_family == "Darwin"

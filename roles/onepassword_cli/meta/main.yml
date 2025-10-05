@@ -12,8 +12,14 @@ galaxy_info:
         - focal  # 20.04 LTS
         - jammy  # 22.04 LTS
         - noble  # 24.04 LTS
+    - name: MacOSX
+      versions:
+        - all
   galaxy_tags:
     - 1password
     - cli
     - tools
     - application
+
+dependencies:
+  - community.general
