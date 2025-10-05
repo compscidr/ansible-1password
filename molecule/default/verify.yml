@@ -167,7 +167,7 @@
       
     - name: Set chrome_available fact
       ansible.builtin.set_fact:
-        chrome_available: "{{ chrome_check.stdout != 'not found' and chrome_available | default(false) }}"
+        chrome_available: "{{ chrome_check.stdout != 'not found' and chrome_check.rc == 0 }}"
 
     - name: Add Mozilla Team PPA for Firefox
       ansible.builtin.apt_repository:
@@ -210,7 +210,7 @@
       
     - name: Set firefox_available fact
       ansible.builtin.set_fact:
-        firefox_available: "{{ firefox_check.stdout != 'not found' and firefox_available | default(false) }}"
+        firefox_available: "{{ firefox_check.stdout != 'not found' and firefox_check.rc == 0 }}"
 
     # Test Chrome extension installation with headed browser using Xvfb
     - name: Create Chrome test profile directory
@@ -220,7 +220,7 @@
         mode: '0755'
       when: chrome_available | default(false)
 
-    - name: Launch Chrome with Xvfb (headed mode) to trigger extension installation
+    - name: Launch Chrome with Xvfb and wait for extension installation
       ansible.builtin.shell:
         cmd: |
           # Start Xvfb
@@ -232,11 +232,20 @@
           sleep 3
           
           # Launch Chrome in GUI mode (not headless) with the profile
-          google-chrome --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --new-window about:blank > /tmp/chrome-headed.log 2>&1 &
+          google-chrome-stable --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --new-window about:blank > /tmp/chrome-headed.log 2>&1 &
           CHROME_PID=$!
           
-          # Give Chrome time to start and download/install extensions
-          sleep 45
+          # Wait up to 3 minutes for extension to be installed, checking every 10 seconds
+          echo "Waiting for Chrome extension installation..."
+          for i in {1..18}; do
+            sleep 10
+            EXT_COUNT=$(find /tmp/chrome-test-profile -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l)
+            echo "Check $i: Found $EXT_COUNT extension files"
+            if [ "$EXT_COUNT" -gt 0 ]; then
+              echo "Chrome extension installed successfully!"
+              break
+            fi
+          done
           
           # Close Chrome gracefully
           kill $CHROME_PID 2>/dev/null || true
@@ -246,12 +255,13 @@
           # Stop Xvfb
           kill $XVFB_PID 2>/dev/null || true
           
-          # Check results
-          echo "Chrome GUI run completed"
+          # Final check
+          FINAL_COUNT=$(find /tmp/chrome-test-profile -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l)
+          echo "Final extension file count: $FINAL_COUNT"
       register: chrome_headed_run
       when: chrome_available | default(false)
       changed_when: false
-      async: 120
+      async: 240
       poll: 0
 
     - name: Wait for Chrome headed test to complete
@@ -259,7 +269,7 @@
         jid: "{{ chrome_headed_run.ansible_job_id }}"
       register: chrome_headed_result
       until: chrome_headed_result.finished
-      retries: 30
+      retries: 50
       delay: 5
       when: chrome_available | default(false)
 
@@ -335,7 +345,7 @@
         mode: '0755'
       when: firefox_available | default(false)
 
-    - name: Launch Firefox with Xvfb (headed mode) to trigger extension installation
+    - name: Launch Firefox with Xvfb and wait for extension installation
       ansible.builtin.shell:
         cmd: |
           # Start Xvfb
@@ -350,8 +360,17 @@
           firefox --new-instance --profile /tmp/firefox-test-profile about:blank > /tmp/firefox-headed.log 2>&1 &
           FIREFOX_PID=$!
           
-          # Give Firefox time to start and download/install extensions
-          sleep 45
+          # Wait up to 3 minutes for extension to be installed, checking every 10 seconds
+          echo "Waiting for Firefox extension installation..."
+          for i in {1..18}; do
+            sleep 10
+            EXT_COUNT=$(find /tmp/firefox-test-profile -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l)
+            echo "Check $i: Found $EXT_COUNT extension files"
+            if [ "$EXT_COUNT" -gt 0 ]; then
+              echo "Firefox extension installed successfully!"
+              break
+            fi
+          done
           
           # Close Firefox gracefully
           kill $FIREFOX_PID 2>/dev/null || true
@@ -361,12 +380,13 @@
           # Stop Xvfb
           kill $XVFB_PID 2>/dev/null || true
           
-          # Check results
-          echo "Firefox GUI run completed"
+          # Final check
+          FINAL_COUNT=$(find /tmp/firefox-test-profile -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l)
+          echo "Final extension file count: $FINAL_COUNT"
       register: firefox_headed_run
       when: firefox_available | default(false)
       changed_when: false
-      async: 120
+      async: 240
       poll: 0
 
     - name: Wait for Firefox headed test to complete
@@ -374,7 +394,7 @@
         jid: "{{ firefox_headed_run.ansible_job_id }}"
       register: firefox_headed_result
       until: firefox_headed_result.finished
-      retries: 30
+      retries: 50
       delay: 5
       when: firefox_available | default(false)
 
