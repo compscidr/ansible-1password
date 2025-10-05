@@ -4,6 +4,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+    types: [opened, synchronize, reopened]
 
 jobs:
   ansible-lint:
@@ -57,3 +58,41 @@ jobs:
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
+
+  macos-test:
+    name: macOS Tests
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core
+          
+      - name: Install required Ansible collections
+        run: |
+          ansible-galaxy collection install community.general
+          
+      - name: Install collection from source
+        run: |
+          mkdir -p ~/.ansible/collections/ansible_collections/compscidr
+          cp -r . ~/.ansible/collections/ansible_collections/compscidr/onepassword
+          
+      - name: Run playbook on macOS
+        run: |
+          ansible-playbook playbook.yml -i localhost, --connection=local
+        env:
+          ANSIBLE_FORCE_COLOR: '1'
+          
+      - name: Verify 1Password CLI installation
+        run: |
+          which op
+          op --version

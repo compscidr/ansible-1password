@@ -5,16 +5,30 @@
 
 Ansible collection to install 1password and 1password cli.
 
+## Supported Platforms
+- Ubuntu (18.04, 20.04, 22.04, 24.04)
+- macOS (via Homebrew)
+
+## Requirements
+- **Ubuntu/Debian**: No additional requirements
+- **macOS**: Homebrew must be installed
+- **All platforms**: The `community.general` Ansible collection (install with `ansible-galaxy collection install community.general`)
+
 ## Usage:
 Add the collection to your meta/requirements.yml:
-```
+```yaml
 collections:
   - name: compscidr.onepassword
     version: "<insert version here>"
 ```
 
-Use the role(s) in a playbook:
+Install required collections:
+```bash
+ansible-galaxy collection install -r requirements.yml
 ```
+
+Use the role(s) in a playbook:
+```yaml
 - name: Install 1password
   hosts: all
   roles:

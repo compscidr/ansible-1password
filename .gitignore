@@ -1,3 +1,5 @@
 .vscode
 # Ansible collections cache
 .ansible/
+# Python virtual environment
+venv/
