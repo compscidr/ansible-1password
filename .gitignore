@@ -1,1 +1,3 @@
 .vscode
+# Ansible collections cache
+.ansible/
