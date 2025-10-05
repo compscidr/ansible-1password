@@ -20,6 +20,3 @@ galaxy_info:
     - cli
     - tools
     - application
-
-dependencies:
-  - community.general

@@ -1,0 +1,25 @@
+---
+# Example playbook showing how to install 1Password on both Ubuntu and macOS
+#
+# This playbook will:
+# - Install 1Password GUI app and CLI on Ubuntu via apt
+# - Install 1Password GUI app and CLI on macOS via Homebrew
+#
+# Prerequisites:
+# - Ubuntu/Debian: No special requirements
+# - macOS: Homebrew must be installed
+# - All: community.general collection (install with: ansible-galaxy collection install -r requirements.yml)
+
+- name: Install 1Password on all platforms
+  hosts: all
+  gather_facts: true
+  roles:
+    - onepassword       # Installs 1Password GUI application
+    - onepassword_cli   # Installs 1Password CLI (op command)
+
+# You can also install only the CLI without the GUI:
+- name: Install only 1Password CLI
+  hosts: cli_only
+  gather_facts: true
+  roles:
+    - onepassword_cli
