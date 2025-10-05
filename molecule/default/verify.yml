@@ -175,19 +175,53 @@
         mode: '0755'
       when: chrome_install is success
 
-    - name: Launch Chrome headless to trigger extension installation
+    - name: Launch Chrome headless to trigger extension installation (first run)
       ansible.builtin.shell:
         cmd: |
-          timeout 30 google-chrome --headless --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --dump-dom about:blank > /dev/null 2>&1 || true
-      register: chrome_headless
+          google-chrome --headless --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --dump-dom about:blank > /tmp/chrome-output.log 2>&1 &
+          CHROME_PID=$!
+          sleep 30
+          kill $CHROME_PID 2>/dev/null || true
+          sleep 2
+      register: chrome_headless_first
       when: chrome_install is success
       changed_when: false
 
-    - name: Check for Chrome extension in profile
+    - name: Check Chrome output logs
+      ansible.builtin.shell:
+        cmd: cat /tmp/chrome-output.log 2>/dev/null || echo "No log file"
+      register: chrome_logs
+      when: chrome_install is success
+      changed_when: false
+      failed_when: false
+
+    - name: Display Chrome logs for debugging
+      ansible.builtin.debug:
+        msg: "Chrome logs: {{ chrome_logs.stdout_lines | default(['No logs']) }}"
+      when: chrome_install is success
+
+    - name: Wait for extension download
+      ansible.builtin.pause:
+        seconds: 15
+      when: chrome_install is success
+
+    - name: Launch Chrome headless again to ensure extension loads
+      ansible.builtin.shell:
+        cmd: |
+          google-chrome --headless --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --dump-dom about:blank > /tmp/chrome-output2.log 2>&1 &
+          CHROME_PID=$!
+          sleep 30
+          kill $CHROME_PID 2>/dev/null || true
+          sleep 2
+      register: chrome_headless_second
+      when: chrome_install is success
+      changed_when: false
+
+    - name: Check for Chrome extension directory
       ansible.builtin.shell:
         cmd: |
           find /tmp/chrome-test-profile -type d -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -1
-      register: chrome_extension_found
+      register: chrome_extension_dir
       when: chrome_install is success
       changed_when: false
       failed_when: false
@@ -201,9 +235,37 @@
       register: chrome_ext_files
       when: chrome_install is success
 
+    - name: List Chrome profile contents for debugging
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== Chrome Profile Structure ===" && \
+          find /tmp/chrome-test-profile -type f -name "*.json" -o -name "*.crx" -o -name "*1password*" -o -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -20
+      register: chrome_profile_debug
+      when: chrome_install is success
+      changed_when: false
+      failed_when: false
+
+    - name: Check Chrome Preferences for extension
+      ansible.builtin.shell:
+        cmd: |
+          if [ -f /tmp/chrome-test-profile/Default/Preferences ]; then
+            grep -o "aeblfdkhhhdcdjpifhhbdiojplfjncoa" /tmp/chrome-test-profile/Default/Preferences || echo "Extension ID not found in Preferences"
+          else
+            echo "Preferences file not found"
+          fi
+      register: chrome_prefs_check
+      when: chrome_install is success
+      changed_when: false
+      failed_when: false
+
     - name: Report Chrome extension verification
       ansible.builtin.debug:
-        msg: "Chrome extension {{ 'INSTALLED' if chrome_ext_files.matched | default(0) > 0 else 'NOT FOUND in headless test (may require interactive session)' }}"
+        msg: |
+          Chrome Extension Verification:
+          - Extension directories found: {{ chrome_ext_files.matched | default(0) }}
+          - Extension directory: {{ chrome_extension_dir.stdout if chrome_extension_dir.stdout else 'Not found' }}
+          - Extension in Preferences: {{ chrome_prefs_check.stdout }}
+          - Profile debug info: {{ chrome_profile_debug.stdout_lines | default([]) | join(', ') if chrome_profile_debug.stdout_lines | default([]) | length > 0 else 'No extension files found' }}
       when: chrome_install is success
 
     # Test Firefox extension installation with headless browser
@@ -214,11 +276,47 @@
         mode: '0755'
       when: firefox_install is success
 
-    - name: Launch Firefox headless to trigger extension installation
+    - name: Launch Firefox headless to trigger extension installation (first run)
       ansible.builtin.shell:
         cmd: |
-          timeout 30 firefox --headless --profile /tmp/firefox-test-profile about:blank > /dev/null 2>&1 || true
-      register: firefox_headless
+          firefox --headless --profile /tmp/firefox-test-profile about:blank > /tmp/firefox-output.log 2>&1 &
+          FIREFOX_PID=$!
+          sleep 30
+          kill $FIREFOX_PID 2>/dev/null || true
+          pkill -9 firefox 2>/dev/null || true
+          sleep 2
+      register: firefox_headless_first
+      when: firefox_install is success
+      changed_when: false
+
+    - name: Check Firefox output logs
+      ansible.builtin.shell:
+        cmd: cat /tmp/firefox-output.log 2>/dev/null || echo "No log file"
+      register: firefox_logs
+      when: firefox_install is success
+      changed_when: false
+      failed_when: false
+
+    - name: Display Firefox logs for debugging
+      ansible.builtin.debug:
+        msg: "Firefox logs: {{ firefox_logs.stdout_lines | default(['No logs']) }}"
+      when: firefox_install is success
+
+    - name: Wait for Firefox extension download
+      ansible.builtin.pause:
+        seconds: 15
+      when: firefox_install is success
+
+    - name: Launch Firefox headless again to ensure extension loads
+      ansible.builtin.shell:
+        cmd: |
+          firefox --headless --profile /tmp/firefox-test-profile about:blank > /tmp/firefox-output2.log 2>&1 &
+          FIREFOX_PID=$!
+          sleep 30
+          kill $FIREFOX_PID 2>/dev/null || true
+          pkill -9 firefox 2>/dev/null || true
+          sleep 2
+      register: firefox_headless_second
       when: firefox_install is success
       changed_when: false
 
@@ -231,9 +329,36 @@
       register: firefox_ext_files
       when: firefox_install is success
 
+    - name: List Firefox profile contents for debugging
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== Firefox Profile Structure ===" && \
+          find /tmp/firefox-test-profile -type f -name "*.json" -o -name "*.xpi" -o -name "*1password*" -o -name "*d634138d*" | head -20
+      register: firefox_profile_debug
+      when: firefox_install is success
+      changed_when: false
+      failed_when: false
+
+    - name: Check Firefox extensions.json for extension
+      ansible.builtin.shell:
+        cmd: |
+          if [ -f /tmp/firefox-test-profile/extensions.json ]; then
+            grep -o "d634138d-c276-4fc8-924b-40a0ea21d284" /tmp/firefox-test-profile/extensions.json || echo "Extension ID not found in extensions.json"
+          else
+            echo "extensions.json file not found"
+          fi
+      register: firefox_ext_check
+      when: firefox_install is success
+      changed_when: false
+      failed_when: false
+
     - name: Report Firefox extension verification
       ansible.builtin.debug:
-        msg: "Firefox extension {{ 'INSTALLED' if firefox_ext_files.matched | default(0) > 0 else 'NOT FOUND in headless test (may require interactive session)' }}"
+        msg: |
+          Firefox Extension Verification:
+          - Extension files found: {{ firefox_ext_files.matched | default(0) }}
+          - Extension in extensions.json: {{ firefox_ext_check.stdout }}
+          - Profile debug info: {{ firefox_profile_debug.stdout_lines | default([]) | join(', ') if firefox_profile_debug.stdout_lines | default([]) | length > 0 else 'No extension files found' }}
       when: firefox_install is success
 
     - name: Display verification summary
@@ -248,14 +373,16 @@
             - Extension ID: aeblfdkhhhdcdjpifhhbdiojplfjncoa
             - Installation mode: normal_installed (user can uninstall)
             - Update URL: {{ chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].update_url }}
-            - Headless browser test: {{ 'Chrome installed, extension files: ' + (chrome_ext_files.matched | default(0) | string) if chrome_install is success else 'Chrome not available for testing' }}
+            - Headless browser test: {{ 'Chrome installed, extension files found: ' + (chrome_ext_files.matched | default(0) | string) if chrome_install is success else 'Chrome not available for testing' }}
+            - Extension verification: {{ 'VERIFIED - Extension installed successfully!' if (chrome_ext_files.matched | default(0) > 0 or 'aeblfdkhhhdcdjpifhhbdiojplfjncoa' in chrome_prefs_check.stdout | default('')) else 'Extension configured via policy (may install on next interactive browser launch)' }}
           
           ✓ Firefox Policy Configuration:
             - Policy file created: {{ firefox_policy_check.stat.exists }}
             - Extension ID: {d634138d-c276-4fc8-924b-40a0ea21d284}
             - Installation mode: normal_installed (user can uninstall)
             - Install URL: {{ firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].install_url }}
-            - Headless browser test: {{ 'Firefox installed, extension files: ' + (firefox_ext_files.matched | default(0) | string) if firefox_install is success else 'Firefox not available for testing' }}
+            - Headless browser test: {{ 'Firefox installed, extension files found: ' + (firefox_ext_files.matched | default(0) | string) if firefox_install is success else 'Firefox not available for testing' }}
+            - Extension verification: {{ 'VERIFIED - Extension installed successfully!' if (firefox_ext_files.matched | default(0) > 0 or 'd634138d-c276-4fc8-924b-40a0ea21d284' in firefox_ext_check.stdout | default('')) else 'Extension configured via policy (may install on next interactive browser launch)' }}
           
           Note: Extensions are configured to auto-install when browsers launch.
-          Headless browser testing validates the installation process.
+          Headless browser testing with extended timeout validates the installation mechanism.
