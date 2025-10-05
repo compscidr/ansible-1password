@@ -1,0 +1,19 @@
+---
+- name: Safari is only supported on macOS
+  tags: 1password_safari
+  ansible.builtin.debug:
+    msg: "Safari browser is only available on macOS. This role has no effect on Debian/Ubuntu systems."
+  when: ansible_os_family == "Debian"
+
+- name: Install 1Password on macOS for Safari support
+  tags: 1password_safari
+  community.general.homebrew_cask:
+    name: 1password
+    state: present
+  when: ansible_os_family == "Darwin"
+
+- name: Verify 1Password Safari support on macOS
+  tags: 1password_safari
+  ansible.builtin.debug:
+    msg: "1Password is installed with Safari extension support. To enable the Safari extension: 1) Open Safari, 2) Go to Safari > Settings > Extensions, 3) Enable the 1Password extension"
+  when: ansible_os_family == "Darwin"
