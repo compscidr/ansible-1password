@@ -96,3 +96,30 @@ jobs:
         run: |
           which op
           op --version
+          
+      - name: Verify Chrome extension policy on macOS
+        run: |
+          if [ -f "/Library/Managed Preferences/com.google.Chrome.plist" ]; then
+            echo "Chrome policy file exists"
+            plutil -p "/Library/Managed Preferences/com.google.Chrome.plist" || echo "Could not read plist"
+          else
+            echo "Chrome policy file not found"
+          fi
+          
+      - name: Verify Firefox extension policy on macOS
+        run: |
+          if [ -f "/Applications/Firefox.app/Contents/Resources/distribution/policies.json" ]; then
+            echo "Firefox policy file exists"
+            cat "/Applications/Firefox.app/Contents/Resources/distribution/policies.json"
+          else
+            echo "Firefox policy file not found (Firefox may not be installed)"
+          fi
+          
+      - name: Verify Safari extension (bundled with 1Password)
+        run: |
+          if [ -d "/Applications/1Password.app" ]; then
+            echo "1Password app installed (includes Safari extension)"
+            ls -la /Applications/1Password.app/Contents/PlugIns/ || echo "No PlugIns directory"
+          else
+            echo "1Password app not found"
+          fi
