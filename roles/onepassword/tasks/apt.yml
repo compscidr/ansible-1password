@@ -25,7 +25,9 @@
 - name: Convert GPG key to binary format
   tags: 1password
   become: true
-  ansible.builtin.shell: "gpg --dearmor < /tmp/1password.asc > /usr/share/keyrings/1password-archive-keyring.gpg"
+  ansible.builtin.command:
+    cmd: gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg /tmp/1password.asc
+    creates: /usr/share/keyrings/1password-archive-keyring.gpg
   when: not onepassword_keyring_exists.stat.exists
 
 - name: Remove temporary key file
