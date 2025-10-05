@@ -14,11 +14,28 @@
   register: browser_support_debian
   when: ansible_os_family == "Debian"
 
-- name: Verify 1Password Chrome support on Debian/Ubuntu
+- name: Create Chrome managed policies directory on Debian/Ubuntu
   tags: 1password_chrome
-  ansible.builtin.debug:
-    msg: "1Password browser support is installed. Users can install the Chrome extension from the Chrome Web Store: https://chrome.google.com/webstore/detail/1password/aeblfdkhhhdcdjpifhhbdiojplfjncoa"
-  when: ansible_os_family == "Debian" and browser_support_debian.stat.exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/opt/chrome/policies/managed
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Debian"
+
+- name: Install 1Password Chrome extension via policy on Debian/Ubuntu
+  tags: 1password_chrome
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "ExtensionInstallForcelist": [
+          "aeblfdkhhhdcdjpifhhbdiojplfjncoa;https://clients2.google.com/service/update2/crx"
+        ]
+      }
+    dest: /etc/opt/chrome/policies/managed/1password.json
+    mode: '0644'
+  when: ansible_os_family == "Debian"
 
 - name: Install 1Password on macOS for Chrome support
   tags: 1password_chrome
@@ -27,8 +44,30 @@
     state: present
   when: ansible_os_family == "Darwin"
 
-- name: Verify 1Password Chrome support on macOS
+- name: Create Chrome managed policies directory on macOS
   tags: 1password_chrome
-  ansible.builtin.debug:
-    msg: "1Password is installed. Users can install the Chrome extension from the Chrome Web Store: https://chrome.google.com/webstore/detail/1password/aeblfdkhhhdcdjpifhhbdiojplfjncoa"
+  become: true
+  ansible.builtin.file:
+    path: /Library/Google/Chrome/NativeMessagingHosts
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Darwin"
+
+- name: Install 1Password Chrome extension via policy on macOS
+  tags: 1password_chrome
+  become: true
+  ansible.builtin.copy:
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>ExtensionInstallForcelist</key>
+        <array>
+          <string>aeblfdkhhhdcdjpifhhbdiojplfjncoa;https://clients2.google.com/service/update2/crx</string>
+        </array>
+      </dict>
+      </plist>
+    dest: /Library/Managed Preferences/com.google.Chrome.plist
+    mode: '0644'
   when: ansible_os_family == "Darwin"

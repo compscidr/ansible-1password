@@ -1,22 +1,25 @@
 # onepassword_firefox
-Installs 1Password Firefox browser extension support
+Automatically installs the 1Password Firefox browser extension
 
 ## Description
-This role ensures that the 1Password desktop application is installed with browser support enabled for Mozilla Firefox. The desktop application provides the native messaging host that allows the Firefox browser extension to communicate securely with 1Password.
+This role installs the 1Password desktop application with browser support and automatically installs the 1Password Firefox extension using Firefox's enterprise policy system. The extension will be automatically installed and enabled when Firefox is next launched.
 
 ## Requirements
 - The `onepassword` role (automatically installed as a dependency)
-- Mozilla Firefox browser must be installed separately
+- Mozilla Firefox browser
 
 ## Supported Platforms
 - Ubuntu (18.04, 20.04, 22.04, 24.04)
 - macOS (via Homebrew)
 
-## Installation
-After running this role, users can install the 1Password browser extension from Mozilla Add-ons:
-https://addons.mozilla.org/en-US/firefox/addon/1password-x-password-manager/
+## How It Works
+The role uses Firefox's ExtensionSettings policy to automatically install the 1Password extension:
+- **Ubuntu/Debian**: Creates policy file at `/etc/firefox/policies/policies.json`
+- **macOS**: Creates policy file at `/Applications/Firefox.app/Contents/Resources/distribution/policies.json`
+
+The extension will be automatically installed and enabled the next time Firefox is launched.
 
 ## Notes
-- This role installs the desktop application with browser support
-- The actual Firefox extension must be installed by users from Mozilla Add-ons
+- The extension is force-installed using enterprise policies
+- Users cannot uninstall the extension (it's managed by policy)
 - The native messaging host enables secure communication between the extension and 1Password

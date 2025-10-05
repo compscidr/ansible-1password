@@ -14,11 +14,33 @@
   register: browser_support_debian
   when: ansible_os_family == "Debian"
 
-- name: Verify 1Password Firefox support on Debian/Ubuntu
+- name: Create Firefox policies directory on Debian/Ubuntu
   tags: 1password_firefox
-  ansible.builtin.debug:
-    msg: "1Password browser support is installed. Users can install the Firefox extension from Mozilla Add-ons: https://addons.mozilla.org/en-US/firefox/addon/1password-x-password-manager/"
-  when: ansible_os_family == "Debian" and browser_support_debian.stat.exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/firefox/policies
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Debian"
+
+- name: Install 1Password Firefox extension via policy on Debian/Ubuntu
+  tags: 1password_firefox
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "policies": {
+          "ExtensionSettings": {
+            "{d634138d-c276-4fc8-924b-40a0ea21d284}": {
+              "installation_mode": "force_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/1password-x-password-manager/latest.xpi"
+            }
+          }
+        }
+      }
+    dest: /etc/firefox/policies/policies.json
+    mode: '0644'
+  when: ansible_os_family == "Debian"
 
 - name: Install 1Password on macOS for Firefox support
   tags: 1password_firefox
@@ -27,8 +49,30 @@
     state: present
   when: ansible_os_family == "Darwin"
 
-- name: Verify 1Password Firefox support on macOS
+- name: Create Firefox distribution directory on macOS
   tags: 1password_firefox
-  ansible.builtin.debug:
-    msg: "1Password is installed. Users can install the Firefox extension from Mozilla Add-ons: https://addons.mozilla.org/en-US/firefox/addon/1password-x-password-manager/"
+  become: true
+  ansible.builtin.file:
+    path: /Applications/Firefox.app/Contents/Resources/distribution
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Darwin"
+
+- name: Install 1Password Firefox extension via policy on macOS
+  tags: 1password_firefox
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "policies": {
+          "ExtensionSettings": {
+            "{d634138d-c276-4fc8-924b-40a0ea21d284}": {
+              "installation_mode": "force_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/1password-x-password-manager/latest.xpi"
+            }
+          }
+        }
+      }
+    dest: /Applications/Firefox.app/Contents/Resources/distribution/policies.json
+    mode: '0644'
   when: ansible_os_family == "Darwin"

@@ -53,3 +53,33 @@
       ansible.builtin.fail:
         msg: "1Password browser support is not installed"
       when: not browser_support_check.stat.exists
+
+    - name: Check if Chrome policy file exists
+      ansible.builtin.stat:
+        path: /etc/opt/chrome/policies/managed/1password.json
+      register: chrome_policy_check
+
+    - name: Verify Chrome extension policy is installed
+      ansible.builtin.debug:
+        msg: "Chrome extension policy file is installed"
+      when: chrome_policy_check.stat.exists
+
+    - name: Fail if Chrome policy is not installed
+      ansible.builtin.fail:
+        msg: "Chrome extension policy file is not installed"
+      when: not chrome_policy_check.stat.exists
+
+    - name: Check if Firefox policy file exists
+      ansible.builtin.stat:
+        path: /etc/firefox/policies/policies.json
+      register: firefox_policy_check
+
+    - name: Verify Firefox extension policy is installed
+      ansible.builtin.debug:
+        msg: "Firefox extension policy file is installed"
+      when: firefox_policy_check.stat.exists
+
+    - name: Fail if Firefox policy is not installed
+      ansible.builtin.fail:
+        msg: "Firefox extension policy file is not installed"
+      when: not firefox_policy_check.stat.exists

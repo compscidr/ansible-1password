@@ -1,22 +1,25 @@
 # onepassword_chrome
-Installs 1Password Chrome browser extension support
+Automatically installs the 1Password Chrome browser extension
 
 ## Description
-This role ensures that the 1Password desktop application is installed with browser support enabled for Google Chrome. The desktop application provides the native messaging host that allows the Chrome browser extension to communicate securely with 1Password.
+This role installs the 1Password desktop application with browser support and automatically installs the 1Password Chrome extension using Chrome's enterprise policy system. The extension will be automatically installed and enabled when Chrome is next launched.
 
 ## Requirements
 - The `onepassword` role (automatically installed as a dependency)
-- Google Chrome browser must be installed separately
+- Google Chrome or Chromium browser
 
 ## Supported Platforms
 - Ubuntu (18.04, 20.04, 22.04, 24.04)
 - macOS (via Homebrew)
 
-## Installation
-After running this role, users can install the 1Password browser extension from the Chrome Web Store:
-https://chrome.google.com/webstore/detail/1password/aeblfdkhhhdcdjpifhhbdiojplfjncoa
+## How It Works
+The role uses Chrome's ExtensionInstallForcelist policy to automatically install the 1Password extension:
+- **Ubuntu/Debian**: Creates policy file at `/etc/opt/chrome/policies/managed/1password.json`
+- **macOS**: Creates policy file at `/Library/Managed Preferences/com.google.Chrome.plist`
+
+The extension will be automatically installed and enabled the next time Chrome is launched.
 
 ## Notes
-- This role installs the desktop application with browser support
-- The actual Chrome extension must be installed by users from the Chrome Web Store
+- The extension is force-installed using enterprise policies
+- Users cannot uninstall the extension (it's managed by policy)
 - The native messaging host enables secure communication between the extension and 1Password
