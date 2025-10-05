@@ -131,6 +131,11 @@
           - gnupg
           - xvfb
           - x11-utils
+          - libasound2
+          - libasound2-plugins
+          - libgbm1
+          - libnss3
+          - libxss1
         state: present
         update_cache: true
       become: true
@@ -199,7 +204,7 @@
     - name: Verify Firefox installation
       ansible.builtin.shell:
         cmd: |
-          which firefox || echo "not found"
+          which firefox || ls -la /usr/bin/firefox* 2>/dev/null || echo "not found"
       register: firefox_check
       changed_when: false
       failed_when: false
@@ -210,7 +215,7 @@
       
     - name: Set firefox_available fact
       ansible.builtin.set_fact:
-        firefox_available: "{{ firefox_check.stdout != 'not found' and firefox_check.rc == 0 }}"
+        firefox_available: "{{ 'firefox' in firefox_check.stdout and firefox_check.rc == 0 }}"
 
     # Test Chrome extension installation with headed browser using Xvfb
     - name: Create Chrome test profile directory
