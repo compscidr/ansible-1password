@@ -167,12 +167,31 @@
       changed_when: false
       failed_when: false
 
-    - name: Install Firefox via snap
-      ansible.builtin.command:
-        cmd: snap install firefox
+    - name: Add Mozilla Team PPA for Firefox
+      ansible.builtin.apt_repository:
+        repo: ppa:mozillateam/ppa
+        state: present
       become: true
-      register: firefox_snap_install
-      changed_when: firefox_snap_install.rc == 0
+      failed_when: false
+
+    - name: Set Firefox package priority to prefer PPA over snap
+      ansible.builtin.copy:
+        content: |
+          Package: *
+          Pin: release o=LP-PPA-mozillateam
+          Pin-Priority: 1001
+        dest: /etc/apt/preferences.d/mozilla-firefox
+        mode: '0644'
+      become: true
+      failed_when: false
+
+    - name: Install Firefox via apt
+      ansible.builtin.apt:
+        name: firefox
+        state: present
+        update_cache: true
+      become: true
+      register: firefox_install
       failed_when: false
 
     - name: Verify Firefox installation
