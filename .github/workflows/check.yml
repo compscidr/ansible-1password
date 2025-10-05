@@ -50,7 +50,7 @@ jobs:
           
       - name: Install required Ansible collections
         run: |
-          ansible-galaxy collection install community.docker containers.podman --force
+          ansible-galaxy collection install community.docker --force
           
       - name: Run molecule tests
         run: molecule test
