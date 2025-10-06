@@ -31,6 +31,7 @@ Use the role(s) in a playbook:
 ```yaml
 - name: Install 1password
   hosts: all
+  gather_facts: true
   roles:
     - onepassword
     - onepassword_cli
@@ -55,6 +56,7 @@ Example usage with browser extensions:
 ```yaml
 - name: Install 1password with browser support
   hosts: all
+  gather_facts: true
   roles:
     - onepassword
     - onepassword_cli
