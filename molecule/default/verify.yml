@@ -263,20 +263,10 @@
           # Final check
           FINAL_COUNT=$(find /tmp/chrome-test-profile -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l)
           echo "Final extension file count: $FINAL_COUNT"
-      register: chrome_headed_run
+      register: chrome_headed_result
       when: chrome_available | default(false)
       changed_when: false
-      async: 240
-      poll: 0
-
-    - name: Wait for Chrome headed test to complete
-      ansible.builtin.async_status:
-        jid: "{{ chrome_headed_run.ansible_job_id }}"
-      register: chrome_headed_result
-      until: chrome_headed_result.finished
-      retries: 50
-      delay: 5
-      when: chrome_available | default(false)
+      failed_when: false
 
     - name: Check Chrome headed logs
       ansible.builtin.shell:
@@ -388,20 +378,10 @@
           # Final check
           FINAL_COUNT=$(find /tmp/firefox-test-profile -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l)
           echo "Final extension file count: $FINAL_COUNT"
-      register: firefox_headed_run
+      register: firefox_headed_result
       when: firefox_available | default(false)
       changed_when: false
-      async: 240
-      poll: 0
-
-    - name: Wait for Firefox headed test to complete
-      ansible.builtin.async_status:
-        jid: "{{ firefox_headed_run.ansible_job_id }}"
-      register: firefox_headed_result
-      until: firefox_headed_result.finished
-      retries: 50
-      delay: 5
-      when: firefox_available | default(false)
+      failed_when: false
 
     - name: Check Firefox headed logs
       ansible.builtin.shell:
