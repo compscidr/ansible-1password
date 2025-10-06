@@ -47,11 +47,11 @@
     state: present
   when: ansible_os_family == "Darwin"
 
-- name: Create Chrome managed policies directory on macOS
+- name: Ensure /Library/Managed Preferences exists for Chrome policies on macOS
   tags: 1password_chrome
   become: true
   ansible.builtin.file:
-    path: /Library/Google/Chrome/NativeMessagingHosts
+    path: /Library/Managed Preferences
     state: directory
     mode: '0755'
   when: ansible_os_family == "Darwin"
