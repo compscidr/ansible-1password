@@ -174,9 +174,9 @@ jobs:
             echo "✓ Firefox policy file exists"
             cat "/Applications/Firefox.app/Contents/Resources/distribution/policies.json"
           else
-            echo "⚠ Firefox policy file not found (creating distribution directory)"
-            sudo mkdir -p "/Applications/Firefox.app/Contents/Resources/distribution"
-            # Note: Policy should be created by the role, this is just verification
+            echo "⚠ Firefox policy file not found"
+            echo "This is expected if Firefox was not installed during role execution"
+            echo "The role creates the policy when it runs"
           fi
           
       - name: Verify Firefox extension installation on macOS
