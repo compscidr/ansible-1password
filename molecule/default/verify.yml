@@ -131,7 +131,7 @@
           - gnupg
           - xvfb
           - x11-utils
-          - libasound2
+          - libasound2t64  # Ubuntu 24.04 uses libasound2t64 instead of libasound2
           - libasound2-plugins
           - libgbm1
           - libnss3
