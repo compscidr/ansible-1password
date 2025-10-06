@@ -23,3 +23,14 @@
   gather_facts: true
   roles:
     - onepassword_cli
+
+# Install 1Password with browser extension support:
+- name: Install 1Password with browser extensions
+  hosts: workstations
+  gather_facts: true
+  roles:
+    - onepassword          # Desktop app (required)
+    - onepassword_cli      # CLI tool
+    - onepassword_chrome   # Chrome browser extension support
+    - onepassword_firefox  # Firefox browser extension support
+    - onepassword_safari   # Safari browser extension support (macOS only)

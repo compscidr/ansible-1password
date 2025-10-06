@@ -4,3 +4,6 @@
   roles:
     - onepassword
     - onepassword_cli
+    - onepassword_chrome
+    - onepassword_firefox
+    - onepassword_safari

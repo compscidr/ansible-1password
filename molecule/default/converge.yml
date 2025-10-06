@@ -10,3 +10,15 @@
     - name: Include onepassword_cli role
       ansible.builtin.include_role:
         name: onepassword_cli
+
+    - name: Include onepassword_chrome role
+      ansible.builtin.include_role:
+        name: onepassword_chrome
+
+    - name: Include onepassword_firefox role
+      ansible.builtin.include_role:
+        name: onepassword_firefox
+
+    - name: Include onepassword_safari role
+      ansible.builtin.include_role:
+        name: onepassword_safari

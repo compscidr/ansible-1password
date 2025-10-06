@@ -3,7 +3,7 @@
 [![CI](https://github.com/compscidr/ansible-1password/actions/workflows/check.yml/badge.svg)](https://github.com/compscidr/ansible-1password/actions/workflows/check.yml)
 [![ansible lint rules](https://img.shields.io/badge/Ansible--lint-rules%20table-blue.svg)](https://ansible.readthedocs.io/projects/lint/rules/)
 
-Ansible collection to install 1password and 1password cli.
+Ansible collection to install 1password, 1password cli, and browser extensions.
 
 ## Supported Platforms
 - Ubuntu (18.04, 20.04, 22.04, 24.04)
@@ -31,12 +31,39 @@ Use the role(s) in a playbook:
 ```yaml
 - name: Install 1password
   hosts: all
+  gather_facts: true
   roles:
     - onepassword
     - onepassword_cli
 ```
 
 Note, you can install just the CLI if you don't want the GUI version of 1password.
+
+## Available Roles
+
+### Core Roles
+- **onepassword** - Installs the 1Password desktop application
+- **onepassword_cli** - Installs the 1Password CLI (op command)
+
+### Browser Extension Support Roles
+These roles automatically install the 1Password browser extensions using enterprise policies (users can still uninstall if desired):
+
+- **onepassword_chrome** - Automatically installs Chrome browser extension via enterprise policy (user removable)
+- **onepassword_firefox** - Automatically installs Firefox browser extension via enterprise policy (user removable)
+- **onepassword_safari** - Enables Safari browser extension support (macOS only, extension bundled with app)
+
+Example usage with browser extensions:
+```yaml
+- name: Install 1password with browser support
+  hosts: all
+  gather_facts: true
+  roles:
+    - onepassword
+    - onepassword_cli
+    - onepassword_chrome
+    - onepassword_firefox
+    - onepassword_safari  # macOS only
+```
 
 ## Development
 
