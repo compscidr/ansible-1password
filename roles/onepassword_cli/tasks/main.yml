@@ -5,8 +5,7 @@
 
 - name: Install apt repo
   tags: 1password
-  become: true
-  ansible.builtin.import_tasks:
+  ansible.builtin.include_tasks:
     file: ../../onepassword/tasks/apt.yml
   when: ansible_os_family == "Debian"
 
@@ -21,6 +20,6 @@
 
 - name: Install 1password cli on macOS
   tags: 1password
-  ansible.builtin.import_tasks:
+  ansible.builtin.include_tasks:
     file: homebrew.yml
   when: ansible_os_family == "Darwin"
