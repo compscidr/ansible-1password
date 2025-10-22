@@ -1,7 +1,6 @@
 ---
 - name: Install apt repo
   tags: 1password
-  become: true
   ansible.builtin.include_tasks:
     file: apt.yml
   when: ansible_os_family == "Debian"
