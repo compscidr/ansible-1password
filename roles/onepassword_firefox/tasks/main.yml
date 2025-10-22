@@ -1,17 +1,9 @@
 ---
-- name: Install 1Password Firefox extension support on Debian/Ubuntu
-  tags: 1password_firefox
-  become: true
-  ansible.builtin.apt:
-    name: 1password
-    state: present
-  when: ansible_os_family == "Debian"
-
 - name: Ensure 1Password Firefox native messaging host is present on Debian/Ubuntu
   tags: 1password_firefox
   ansible.builtin.stat:
     path: /opt/1Password/1Password-BrowserSupport
-  register: browser_support_debian
+  register: onepassword_firefox_browser_support_debian
   when: ansible_os_family == "Debian"
 
 - name: Create Firefox policies directory on Debian/Ubuntu
@@ -41,13 +33,6 @@
     dest: /etc/firefox/policies/policies.json
     mode: '0644'
   when: ansible_os_family == "Debian"
-
-- name: Install 1Password on macOS for Firefox support
-  tags: 1password_firefox
-  community.general.homebrew_cask:
-    name: 1password
-    state: present
-  when: ansible_os_family == "Darwin"
 
 - name: Create Firefox distribution directory on macOS
   tags: 1password_firefox

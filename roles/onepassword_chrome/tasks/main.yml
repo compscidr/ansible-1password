@@ -1,17 +1,9 @@
 ---
-- name: Install 1Password Chrome extension support on Debian/Ubuntu
-  tags: 1password_chrome
-  become: true
-  ansible.builtin.apt:
-    name: 1password
-    state: present
-  when: ansible_os_family == "Debian"
-
 - name: Ensure 1Password Chrome native messaging host is present on Debian/Ubuntu
   tags: 1password_chrome
   ansible.builtin.stat:
     path: /opt/1Password/1Password-BrowserSupport
-  register: browser_support_debian
+  register: onepassword_chrome_browser_support_debian
   when: ansible_os_family == "Debian"
 
 - name: Create Chrome managed policies directory on Debian/Ubuntu
@@ -39,13 +31,6 @@
     dest: /etc/opt/chrome/policies/managed/1password.json
     mode: '0644'
   when: ansible_os_family == "Debian"
-
-- name: Install 1Password on macOS for Chrome support
-  tags: 1password_chrome
-  community.general.homebrew_cask:
-    name: 1password
-    state: present
-  when: ansible_os_family == "Darwin"
 
 - name: Ensure /Library/Managed Preferences exists for Chrome policies on macOS
   tags: 1password_chrome
