@@ -1,6 +1,7 @@
 ---
 - name: Install 1password-cli via Homebrew
   tags: 1password
+  become: false
   community.general.homebrew:
     name: 1password-cli
     state: present

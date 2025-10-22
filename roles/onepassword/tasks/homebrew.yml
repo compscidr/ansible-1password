@@ -1,6 +1,7 @@
 ---
 - name: Install 1password via Homebrew Cask
   tags: 1password
+  become: false
   community.general.homebrew_cask:
     name: 1password
     state: present
