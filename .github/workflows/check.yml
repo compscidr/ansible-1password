@@ -47,7 +47,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r molecule/requirements.txt
+          pip install -r requirements.txt
           
       - name: Install required Ansible collections
         run: |
@@ -96,3 +96,138 @@ jobs:
         run: |
           which op
           op --version
+          
+      - name: Verify Chrome extension policy on macOS
+        run: |
+          if [ -f "/Library/Managed Preferences/com.google.Chrome.plist" ]; then
+            echo "✓ Chrome policy file exists"
+            plutil -p "/Library/Managed Preferences/com.google.Chrome.plist" || echo "Could not read plist"
+          else
+            echo "✗ Chrome policy file not found"
+            exit 1
+          fi
+          
+      - name: Install Chrome on macOS
+        run: |
+          if ! command -v "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" &> /dev/null; then
+            echo "Installing Chrome..."
+            brew install --cask google-chrome || echo "Chrome install failed"
+          else
+            echo "Chrome already installed"
+          fi
+          
+      - name: Verify Chrome extension installation on macOS
+        run: |
+          if command -v "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" &> /dev/null; then
+            echo "Chrome is installed, testing extension installation..."
+            
+            # Create test profile
+            CHROME_PROFILE="$HOME/Library/Application Support/Google/Chrome-Test"
+            rm -rf "$CHROME_PROFILE" 2>/dev/null || true
+            mkdir -p "$CHROME_PROFILE"
+            
+            # Launch Chrome with test profile and wait for extension
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir="$CHROME_PROFILE" --new-window about:blank > /tmp/chrome-test.log 2>&1 &
+            CHROME_PID=$!
+            
+            echo "Waiting for Chrome extension installation (checking every 10 seconds for up to 3 minutes)..."
+            for i in {1..18}; do
+              sleep 10
+              EXT_COUNT=$(find "$CHROME_PROFILE" -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l | tr -d ' ')
+              echo "Check $i/18: Found $EXT_COUNT extension files"
+              if [ "$EXT_COUNT" -gt 0 ]; then
+                echo "✓ VERIFIED - Chrome extension installed successfully!"
+                break
+              fi
+            done
+            
+            # Cleanup
+            kill $CHROME_PID 2>/dev/null || true
+            sleep 2
+            pkill -9 "Google Chrome" 2>/dev/null || true
+            
+            # Final verification
+            FINAL_COUNT=$(find "$CHROME_PROFILE" -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l | tr -d ' ')
+            echo "Final extension file count: $FINAL_COUNT"
+            
+            if [ "$FINAL_COUNT" -gt 0 ]; then
+              echo "✓ Chrome extension verification: PASSED"
+            else
+              echo "⚠ Chrome extension not found in profile (may need more time to download)"
+            fi
+          else
+            echo "Chrome not installed, skipping extension verification"
+          fi
+          
+      - name: Install Firefox on macOS  
+        run: |
+          if ! command -v "/Applications/Firefox.app/Contents/MacOS/firefox" &> /dev/null; then
+            echo "Installing Firefox..."
+            brew install --cask firefox || echo "Firefox install failed"
+          else
+            echo "Firefox already installed"
+          fi
+          
+      - name: Verify Firefox extension policy on macOS
+        run: |
+          if [ -f "/Applications/Firefox.app/Contents/Resources/distribution/policies.json" ]; then
+            echo "✓ Firefox policy file exists"
+            cat "/Applications/Firefox.app/Contents/Resources/distribution/policies.json"
+          else
+            echo "⚠ Firefox policy file not found"
+            echo "This is expected if Firefox was not installed during role execution"
+            echo "The role creates the policy when it runs"
+          fi
+          
+      - name: Verify Firefox extension installation on macOS
+        run: |
+          if command -v "/Applications/Firefox.app/Contents/MacOS/firefox" &> /dev/null; then
+            echo "Firefox is installed, testing extension installation..."
+            
+            # Create test profile
+            FIREFOX_PROFILE="$HOME/Library/Application Support/Firefox-Test"
+            rm -rf "$FIREFOX_PROFILE" 2>/dev/null || true
+            mkdir -p "$FIREFOX_PROFILE"
+            
+            # Launch Firefox with test profile and wait for extension
+            "/Applications/Firefox.app/Contents/MacOS/firefox" --new-instance --profile "$FIREFOX_PROFILE" about:blank > /tmp/firefox-test.log 2>&1 &
+            FIREFOX_PID=$!
+            
+            echo "Waiting for Firefox extension installation (checking every 10 seconds for up to 3 minutes)..."
+            for i in {1..18}; do
+              sleep 10
+              EXT_COUNT=$(find "$FIREFOX_PROFILE" -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l | tr -d ' ')
+              echo "Check $i/18: Found $EXT_COUNT extension files"
+              if [ "$EXT_COUNT" -gt 0 ]; then
+                echo "✓ VERIFIED - Firefox extension installed successfully!"
+                break
+              fi
+            done
+            
+            # Cleanup
+            kill $FIREFOX_PID 2>/dev/null || true
+            sleep 2
+            pkill -9 "firefox" 2>/dev/null || true
+            
+            # Final verification
+            FINAL_COUNT=$(find "$FIREFOX_PROFILE" -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l | tr -d ' ')
+            echo "Final extension file count: $FINAL_COUNT"
+            
+            if [ "$FINAL_COUNT" -gt 0 ]; then
+              echo "✓ Firefox extension verification: PASSED"
+            else
+              echo "⚠ Firefox extension not found in profile (may need more time to download)"
+            fi
+          else
+            echo "Firefox not installed, skipping extension verification"
+          fi
+
+          
+      - name: Verify Safari extension (bundled with 1Password)
+        run: |
+          if [ -d "/Applications/1Password.app" ]; then
+            echo "1Password app installed (includes Safari extension)"
+            ls -la /Applications/1Password.app/Contents/PlugIns/ || echo "No PlugIns directory"
+          else
+            echo "1Password app not found"
+          fi

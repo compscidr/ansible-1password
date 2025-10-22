@@ -1,0 +1,67 @@
+---
+- name: Ensure 1Password Chrome native messaging host is present on Debian/Ubuntu
+  tags: 1password_chrome
+  ansible.builtin.stat:
+    path: /opt/1Password/1Password-BrowserSupport
+  register: onepassword_chrome_browser_support_debian
+  when: ansible_os_family == "Debian"
+
+- name: Create Chrome managed policies directory on Debian/Ubuntu
+  tags: 1password_chrome
+  become: true
+  ansible.builtin.file:
+    path: /etc/opt/chrome/policies/managed
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Debian"
+
+- name: Install 1Password Chrome extension via policy on Debian/Ubuntu
+  tags: 1password_chrome
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "ExtensionSettings": {
+          "aeblfdkhhhdcdjpifhhbdiojplfjncoa": {
+            "installation_mode": "normal_installed",
+            "update_url": "https://clients2.google.com/service/update2/crx"
+          }
+        }
+      }
+    dest: /etc/opt/chrome/policies/managed/1password.json
+    mode: '0644'
+  when: ansible_os_family == "Debian"
+
+- name: Ensure /Library/Managed Preferences exists for Chrome policies on macOS
+  tags: 1password_chrome
+  become: true
+  ansible.builtin.file:
+    path: /Library/Managed Preferences
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Darwin"
+
+- name: Install 1Password Chrome extension via policy on macOS
+  tags: 1password_chrome
+  become: true
+  ansible.builtin.copy:
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>ExtensionSettings</key>
+        <dict>
+          <key>aeblfdkhhhdcdjpifhhbdiojplfjncoa</key>
+          <dict>
+            <key>installation_mode</key>
+            <string>normal_installed</string>
+            <key>update_url</key>
+            <string>https://clients2.google.com/service/update2/crx</string>
+          </dict>
+        </dict>
+      </dict>
+      </plist>
+    dest: /Library/Managed Preferences/com.google.Chrome.plist
+    mode: '0644'
+  when: ansible_os_family == "Darwin"

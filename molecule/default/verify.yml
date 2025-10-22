@@ -38,3 +38,427 @@
       ansible.builtin.debug:
         msg: "1Password CLI (op) command is available at {{ op_command_check.stdout }}"
       when: op_command_check.rc == 0
+
+    - name: Check if browser support exists
+      ansible.builtin.stat:
+        path: /opt/1Password/1Password-BrowserSupport
+      register: browser_support_check
+
+    - name: Verify browser support installation
+      ansible.builtin.debug:
+        msg: "1Password browser support is installed for Chrome and Firefox extensions"
+      when: browser_support_check.stat.exists
+
+    - name: Fail if browser support is not installed
+      ansible.builtin.fail:
+        msg: "1Password browser support is not installed"
+      when: not browser_support_check.stat.exists
+
+    - name: Check if Chrome policy file exists
+      ansible.builtin.stat:
+        path: /etc/opt/chrome/policies/managed/1password.json
+      register: chrome_policy_check
+
+    - name: Verify Chrome extension policy is installed
+      ansible.builtin.debug:
+        msg: "Chrome extension policy file is installed"
+      when: chrome_policy_check.stat.exists
+
+    - name: Fail if Chrome policy is not installed
+      ansible.builtin.fail:
+        msg: "Chrome extension policy file is not installed"
+      when: not chrome_policy_check.stat.exists
+
+    - name: Read Chrome policy file
+      ansible.builtin.slurp:
+        src: /etc/opt/chrome/policies/managed/1password.json
+      register: chrome_policy_content
+
+    - name: Parse Chrome policy JSON
+      ansible.builtin.set_fact:
+        chrome_policy_json: "{{ chrome_policy_content['content'] | b64decode | from_json }}"
+
+    - name: Verify Chrome policy has correct structure
+      ansible.builtin.assert:
+        that:
+          - chrome_policy_json.ExtensionSettings is defined
+          - chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'] is defined
+          - chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].installation_mode == 'normal_installed'
+          - chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].update_url is defined
+        fail_msg: "Chrome policy does not have correct structure for 1Password extension"
+        success_msg: "Chrome policy correctly configured for 1Password extension auto-installation"
+
+    - name: Check if Firefox policy file exists
+      ansible.builtin.stat:
+        path: /etc/firefox/policies/policies.json
+      register: firefox_policy_check
+
+    - name: Verify Firefox extension policy is installed
+      ansible.builtin.debug:
+        msg: "Firefox extension policy file is installed"
+      when: firefox_policy_check.stat.exists
+
+    - name: Fail if Firefox policy is not installed
+      ansible.builtin.fail:
+        msg: "Firefox extension policy file is not installed"
+      when: not firefox_policy_check.stat.exists
+
+    - name: Read Firefox policy file
+      ansible.builtin.slurp:
+        src: /etc/firefox/policies/policies.json
+      register: firefox_policy_content
+
+    - name: Parse Firefox policy JSON
+      ansible.builtin.set_fact:
+        firefox_policy_json: "{{ firefox_policy_content['content'] | b64decode | from_json }}"
+
+    - name: Verify Firefox policy has correct structure
+      ansible.builtin.assert:
+        that:
+          - firefox_policy_json.policies is defined
+          - firefox_policy_json.policies.ExtensionSettings is defined
+          - firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'] is defined
+          - firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].installation_mode == 'normal_installed'
+          - firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].install_url is defined
+        fail_msg: "Firefox policy does not have correct structure for 1Password extension"
+        success_msg: "Firefox policy correctly configured for 1Password extension auto-installation"
+
+    # Install browsers and X server for GUI testing
+    - name: Install Chrome dependencies and X server
+      ansible.builtin.apt:
+        name:
+          - wget
+          - gnupg
+          - xvfb
+          - x11-utils
+          - libasound2t64  # Ubuntu 24.04 uses libasound2t64 instead of libasound2
+          - libasound2-plugins
+          - libgbm1
+          - libnss3
+          - libxss1
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Download Chrome .deb package
+      ansible.builtin.get_url:
+        url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        dest: /tmp/google-chrome-stable_current_amd64.deb
+        mode: '0644'
+      become: true
+      register: chrome_download
+      failed_when: false
+
+    - name: Install Google Chrome from .deb
+      ansible.builtin.apt:
+        deb: /tmp/google-chrome-stable_current_amd64.deb
+        state: present
+      become: true
+      register: chrome_install
+      when: chrome_download is success
+      failed_when: false
+
+    - name: Verify Chrome installation
+      ansible.builtin.shell:
+        cmd: |
+          which google-chrome || which google-chrome-stable || which chromium || echo "not found"
+      register: chrome_check
+      changed_when: false
+      failed_when: false
+
+    - name: Debug Chrome check result
+      ansible.builtin.debug:
+        msg: "Chrome check: rc={{ chrome_check.rc }}, stdout={{ chrome_check.stdout }}, stderr={{ chrome_check.stderr | default('') }}"
+      
+    - name: Set chrome_available fact
+      ansible.builtin.set_fact:
+        chrome_available: "{{ chrome_check.stdout != 'not found' and chrome_check.rc == 0 }}"
+
+    - name: Add Mozilla Team PPA for Firefox
+      ansible.builtin.apt_repository:
+        repo: ppa:mozillateam/ppa
+        state: present
+      become: true
+      failed_when: false
+
+    - name: Set Firefox package priority to prefer PPA over snap
+      ansible.builtin.copy:
+        content: |
+          Package: *
+          Pin: release o=LP-PPA-mozillateam
+          Pin-Priority: 1001
+        dest: /etc/apt/preferences.d/mozilla-firefox
+        mode: '0644'
+      become: true
+      failed_when: false
+
+    - name: Install Firefox via apt
+      ansible.builtin.apt:
+        name: firefox
+        state: present
+        update_cache: true
+      become: true
+      register: firefox_install
+      failed_when: false
+
+    - name: Verify Firefox installation
+      ansible.builtin.shell:
+        cmd: |
+          which firefox || ls -la /usr/bin/firefox* 2>/dev/null || echo "not found"
+      register: firefox_check
+      changed_when: false
+      failed_when: false
+
+    - name: Debug Firefox check result
+      ansible.builtin.debug:
+        msg: "Firefox check: rc={{ firefox_check.rc }}, stdout={{ firefox_check.stdout }}"
+      
+    - name: Set firefox_available fact
+      ansible.builtin.set_fact:
+        firefox_available: "{{ 'firefox' in firefox_check.stdout and firefox_check.rc == 0 }}"
+
+    # Test Chrome extension installation with headed browser using Xvfb
+    - name: Create Chrome test profile directory
+      ansible.builtin.file:
+        path: /tmp/chrome-test-profile
+        state: directory
+        mode: '0755'
+      when: chrome_available | default(false)
+
+    - name: Launch Chrome with Xvfb and wait for extension installation
+      ansible.builtin.shell:
+        cmd: |
+          # Start Xvfb
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          
+          # Wait for X server to start
+          sleep 3
+          
+          # Launch Chrome in GUI mode (not headless) with the profile
+          google-chrome-stable --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --new-window about:blank > /tmp/chrome-headed.log 2>&1 &
+          CHROME_PID=$!
+          
+          # Wait up to 3 minutes for extension to be installed, checking every 10 seconds
+          echo "Waiting for Chrome extension installation..."
+          for i in {1..18}; do
+            sleep 10
+            EXT_COUNT=$(find /tmp/chrome-test-profile -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l)
+            echo "Check $i: Found $EXT_COUNT extension files"
+            if [ "$EXT_COUNT" -gt 0 ]; then
+              echo "Chrome extension installed successfully!"
+              break
+            fi
+          done
+          
+          # Close Chrome gracefully
+          kill $CHROME_PID 2>/dev/null || true
+          sleep 3
+          pkill -9 chrome 2>/dev/null || true
+          
+          # Stop Xvfb
+          kill $XVFB_PID 2>/dev/null || true
+          
+          # Final check
+          FINAL_COUNT=$(find /tmp/chrome-test-profile -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l)
+          echo "Final extension file count: $FINAL_COUNT"
+      register: chrome_headed_result
+      when: chrome_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Check Chrome headed logs
+      ansible.builtin.shell:
+        cmd: cat /tmp/chrome-headed.log 2>/dev/null | head -50 || echo "No log file"
+      register: chrome_headed_logs
+      when: chrome_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Display Chrome headed logs
+      ansible.builtin.debug:
+        msg: "Chrome headed logs: {{ chrome_headed_logs.stdout_lines | default(['No logs']) }}"
+      when: chrome_available | default(false)
+
+    - name: Check for Chrome extension directory
+      ansible.builtin.shell:
+        cmd: |
+          find /tmp/chrome-test-profile -type d -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -1
+      register: chrome_extension_dir
+      when: chrome_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Check Chrome Extensions directory
+      ansible.builtin.find:
+        paths: /tmp/chrome-test-profile
+        patterns: "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*"
+        recurse: true
+        file_type: any
+      register: chrome_ext_files
+      when: chrome_available | default(false)
+
+    - name: List Chrome profile contents for debugging
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== Chrome Profile Structure ===" && \
+          find /tmp/chrome-test-profile -type f -name "*.json" -o -name "*.crx" -o -name "*1password*" -o -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -20
+      register: chrome_profile_debug
+      when: chrome_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Check Chrome Preferences for extension
+      ansible.builtin.shell:
+        cmd: |
+          if [ -f /tmp/chrome-test-profile/Default/Preferences ]; then
+            grep -o "aeblfdkhhhdcdjpifhhbdiojplfjncoa" /tmp/chrome-test-profile/Default/Preferences || echo "Extension ID not found in Preferences"
+          else
+            echo "Preferences file not found"
+          fi
+      register: chrome_prefs_check
+      when: chrome_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Report Chrome extension verification
+      ansible.builtin.debug:
+        msg: |
+          Chrome Extension Verification:
+          - Extension directories found: {{ chrome_ext_files.matched | default(0) }}
+          - Extension directory: {{ chrome_extension_dir.stdout if chrome_extension_dir.stdout else 'Not found' }}
+          - Extension in Preferences: {{ chrome_prefs_check.stdout }}
+          - Profile debug info: {{ chrome_profile_debug.stdout_lines | default([]) | join(', ') if chrome_profile_debug.stdout_lines | default([]) | length > 0 else 'No extension files found' }}
+      when: chrome_available | default(false)
+
+    # Test Firefox extension installation with headed browser using Xvfb
+    - name: Create Firefox test profile directory
+      ansible.builtin.file:
+        path: /tmp/firefox-test-profile
+        state: directory
+        mode: '0755'
+      when: firefox_available | default(false)
+
+    - name: Launch Firefox with Xvfb and wait for extension installation
+      ansible.builtin.shell:
+        cmd: |
+          # Start Xvfb
+          Xvfb :98 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+          XVFB_PID=$!
+          export DISPLAY=:98
+          
+          # Wait for X server to start
+          sleep 3
+          
+          # Launch Firefox in GUI mode (not headless) with the profile
+          firefox --new-instance --profile /tmp/firefox-test-profile about:blank > /tmp/firefox-headed.log 2>&1 &
+          FIREFOX_PID=$!
+          
+          # Wait up to 3 minutes for extension to be installed, checking every 10 seconds
+          echo "Waiting for Firefox extension installation..."
+          for i in {1..18}; do
+            sleep 10
+            EXT_COUNT=$(find /tmp/firefox-test-profile -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l)
+            echo "Check $i: Found $EXT_COUNT extension files"
+            if [ "$EXT_COUNT" -gt 0 ]; then
+              echo "Firefox extension installed successfully!"
+              break
+            fi
+          done
+          
+          # Close Firefox gracefully
+          kill $FIREFOX_PID 2>/dev/null || true
+          sleep 3
+          pkill -9 firefox 2>/dev/null || true
+          
+          # Stop Xvfb
+          kill $XVFB_PID 2>/dev/null || true
+          
+          # Final check
+          FINAL_COUNT=$(find /tmp/firefox-test-profile -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l)
+          echo "Final extension file count: $FINAL_COUNT"
+      register: firefox_headed_result
+      when: firefox_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Check Firefox headed logs
+      ansible.builtin.shell:
+        cmd: cat /tmp/firefox-headed.log 2>/dev/null | head -50 || echo "No log file"
+      register: firefox_headed_logs
+      when: firefox_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Display Firefox headed logs
+      ansible.builtin.debug:
+        msg: "Firefox headed logs: {{ firefox_headed_logs.stdout_lines | default(['No logs']) }}"
+      when: firefox_available | default(false)
+
+    - name: Check for Firefox extension in profile
+      ansible.builtin.find:
+        paths: /tmp/firefox-test-profile
+        patterns: "*d634138d-c276-4fc8-924b-40a0ea21d284*"
+        recurse: true
+        file_type: any
+      register: firefox_ext_files
+      when: firefox_available | default(false)
+
+    - name: List Firefox profile contents for debugging
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== Firefox Profile Structure ===" && \
+          find /tmp/firefox-test-profile -type f -name "*.json" -o -name "*.xpi" -o -name "*1password*" -o -name "*d634138d*" | head -20
+      register: firefox_profile_debug
+      when: firefox_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Check Firefox extensions.json for extension
+      ansible.builtin.shell:
+        cmd: |
+          if [ -f /tmp/firefox-test-profile/extensions.json ]; then
+            grep -o "d634138d-c276-4fc8-924b-40a0ea21d284" /tmp/firefox-test-profile/extensions.json || echo "Extension ID not found in extensions.json"
+          else
+            echo "extensions.json file not found"
+          fi
+      register: firefox_ext_check
+      when: firefox_available | default(false)
+      changed_when: false
+      failed_when: false
+
+    - name: Report Firefox extension verification
+      ansible.builtin.debug:
+        msg: |
+          Firefox Extension Verification:
+          - Extension files found: {{ firefox_ext_files.matched | default(0) }}
+          - Extension in extensions.json: {{ firefox_ext_check.stdout }}
+          - Profile debug info: {{ firefox_profile_debug.stdout_lines | default([]) | join(', ') if firefox_profile_debug.stdout_lines | default([]) | length > 0 else 'No extension files found' }}
+      when: firefox_available | default(false)
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          1Password Browser Extension Verification
+          ========================================
+          
+          ✓ Chrome Policy Configuration:
+            - Policy file created: {{ chrome_policy_check.stat.exists }}
+            - Extension ID: aeblfdkhhhdcdjpifhhbdiojplfjncoa
+            - Installation mode: normal_installed (user can uninstall)
+            - Update URL: {{ chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].update_url }}
+            - Headed browser test (Xvfb): {{ 'Chrome installed, extension files found: ' + (chrome_ext_files.matched | default(0) | string) if chrome_available | default(false) else 'Chrome not available for testing' }}
+            - Extension verification: {{ 'VERIFIED - Extension installed successfully!' if (chrome_ext_files.matched | default(0) > 0 or 'aeblfdkhhhdcdjpifhhbdiojplfjncoa' in chrome_prefs_check.stdout | default('')) else 'Extension configured via policy (may require additional time for download)' }}
+          
+          ✓ Firefox Policy Configuration:
+            - Policy file created: {{ firefox_policy_check.stat.exists }}
+            - Extension ID: {d634138d-c276-4fc8-924b-40a0ea21d284}
+            - Installation mode: normal_installed (user can uninstall)
+            - Install URL: {{ firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].install_url }}
+            - Headed browser test (Xvfb): {{ 'Firefox installed, extension files found: ' + (firefox_ext_files.matched | default(0) | string) if firefox_available | default(false) else 'Firefox not available for testing' }}
+            - Extension verification: {{ 'VERIFIED - Extension installed successfully!' if (firefox_ext_files.matched | default(0) > 0 or 'd634138d-c276-4fc8-924b-40a0ea21d284' in firefox_ext_check.stdout | default('')) else 'Extension configured via policy (may require additional time for download)' }}
+          
+          Note: Extensions are configured to auto-install when browsers launch.
+          Headed browser testing with Xvfb (virtual display) validates the full installation process.

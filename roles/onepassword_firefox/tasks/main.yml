@@ -1,0 +1,63 @@
+---
+- name: Ensure 1Password Firefox native messaging host is present on Debian/Ubuntu
+  tags: 1password_firefox
+  ansible.builtin.stat:
+    path: /opt/1Password/1Password-BrowserSupport
+  register: onepassword_firefox_browser_support_debian
+  when: ansible_os_family == "Debian"
+
+- name: Create Firefox policies directory on Debian/Ubuntu
+  tags: 1password_firefox
+  become: true
+  ansible.builtin.file:
+    path: /etc/firefox/policies
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Debian"
+
+- name: Install 1Password Firefox extension via policy on Debian/Ubuntu
+  tags: 1password_firefox
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "policies": {
+          "ExtensionSettings": {
+            "{d634138d-c276-4fc8-924b-40a0ea21d284}": {
+              "installation_mode": "normal_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/1password-x-password-manager/latest.xpi"
+            }
+          }
+        }
+      }
+    dest: /etc/firefox/policies/policies.json
+    mode: '0644'
+  when: ansible_os_family == "Debian"
+
+- name: Create Firefox distribution directory on macOS
+  tags: 1password_firefox
+  become: true
+  ansible.builtin.file:
+    path: /Applications/Firefox.app/Contents/Resources/distribution
+    state: directory
+    mode: '0755'
+  when: ansible_os_family == "Darwin"
+
+- name: Install 1Password Firefox extension via policy on macOS
+  tags: 1password_firefox
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "policies": {
+          "ExtensionSettings": {
+            "{d634138d-c276-4fc8-924b-40a0ea21d284}": {
+              "installation_mode": "normal_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/1password-x-password-manager/latest.xpi"
+            }
+          }
+        }
+      }
+    dest: /Applications/Firefox.app/Contents/Resources/distribution/policies.json
+    mode: '0644'
+  when: ansible_os_family == "Darwin"
