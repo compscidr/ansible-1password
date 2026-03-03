@@ -4,7 +4,7 @@
   ansible.builtin.stat:
     path: /opt/1Password/1Password-BrowserSupport
   register: onepassword_firefox_browser_support_debian
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Create Firefox policies directory on Debian/Ubuntu
   tags: 1password_firefox
@@ -13,7 +13,7 @@
     path: /etc/firefox/policies
     state: directory
     mode: '0755'
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Install 1Password Firefox extension via policy on Debian/Ubuntu
   tags: 1password_firefox
@@ -32,7 +32,7 @@
       }
     dest: /etc/firefox/policies/policies.json
     mode: '0644'
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Create Firefox distribution directory on macOS
   tags: 1password_firefox
@@ -41,7 +41,7 @@
     path: /Applications/Firefox.app/Contents/Resources/distribution
     state: directory
     mode: '0755'
-  when: ansible_os_family == "Darwin"
+  when: ansible_facts["os_family"] == "Darwin"
 
 - name: Install 1Password Firefox extension via policy on macOS
   tags: 1password_firefox
@@ -60,4 +60,4 @@
       }
     dest: /Applications/Firefox.app/Contents/Resources/distribution/policies.json
     mode: '0644'
-  when: ansible_os_family == "Darwin"
+  when: ansible_facts["os_family"] == "Darwin"
