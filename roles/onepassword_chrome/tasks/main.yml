@@ -4,7 +4,7 @@
   ansible.builtin.stat:
     path: /opt/1Password/1Password-BrowserSupport
   register: onepassword_chrome_browser_support_debian
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Create Chrome managed policies directory on Debian/Ubuntu
   tags: 1password_chrome
@@ -13,7 +13,7 @@
     path: /etc/opt/chrome/policies/managed
     state: directory
     mode: '0755'
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Install 1Password Chrome extension via policy on Debian/Ubuntu
   tags: 1password_chrome
@@ -30,7 +30,7 @@
       }
     dest: /etc/opt/chrome/policies/managed/1password.json
     mode: '0644'
-  when: ansible_os_family == "Debian"
+  when: ansible_facts["os_family"] == "Debian"
 
 - name: Ensure /Library/Managed Preferences exists for Chrome policies on macOS
   tags: 1password_chrome
@@ -39,7 +39,7 @@
     path: /Library/Managed Preferences
     state: directory
     mode: '0755'
-  when: ansible_os_family == "Darwin"
+  when: ansible_facts["os_family"] == "Darwin"
 
 - name: Install 1Password Chrome extension via policy on macOS
   tags: 1password_chrome
@@ -64,4 +64,4 @@
       </plist>
     dest: /Library/Managed Preferences/com.google.Chrome.plist
     mode: '0644'
-  when: ansible_os_family == "Darwin"
+  when: ansible_facts["os_family"] == "Darwin"
