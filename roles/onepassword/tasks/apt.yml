@@ -38,12 +38,15 @@
     state: absent
   when: not onepassword_keyring_exists.stat.exists
 
+- name: Compute 1password deb architecture
+  tags: 1password
+  ansible.builtin.set_fact:
+    onepassword_deb_arch: "{{ [ansible_facts['architecture']] | map('extract', onepassword_deb_architecture) | first }}"
+
 - name: Install 1password repo
   tags: 1password
   become: true
   ansible.builtin.apt_repository:
-    repo: >
-      deb [arch={{ [ansible_facts["architecture"]] | map('extract', onepassword_deb_architecture) | first }} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg]
-      https://downloads.1password.com/linux/debian/{{ [ansible_facts["architecture"]] | map('extract', onepassword_deb_architecture) | first }} stable main
+    repo: "deb [arch={{ onepassword_deb_arch }} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/{{ onepassword_deb_arch }} stable main"
     state: present
     filename: 1password
