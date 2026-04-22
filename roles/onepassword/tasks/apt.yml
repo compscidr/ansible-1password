@@ -43,12 +43,19 @@
   ansible.builtin.set_fact:
     onepassword_deb_arch: "{{ [ansible_facts['architecture']] | map('extract', onepassword_deb_architecture) | first }}"
 
-# Write the repo file directly in deb822 format. `apt_repository` has
-# a roundtrip comparison that newer ansible-core / apt tooling flags as
-# `changed` on every run even when the contents are equivalent, which
-# breaks idempotence. `copy` writes exact bytes and compares by hash,
-# so it's reliably idempotent.
-- name: Install 1password repo (deb822)
+# Check if the 1password sources file already exists. If it does, we
+# intentionally don't touch it — even `copy` with a byte-identical
+# `content:` has shown non-idempotent behavior in downstream runs
+# (likely an apt-tool or package-postinst rewrites the file between
+# ansible passes, flipping the comparison hash). Write-once semantics
+# via `stat` + `when: not exists` is bulletproof.
+- name: Check if 1password sources file already exists
+  tags: 1password
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/1password.sources
+  register: onepassword_sources_stat
+
+- name: Install 1password repo (deb822, first install only)
   tags: 1password
   become: true
   ansible.builtin.copy:
@@ -63,7 +70,8 @@
     mode: '0644'
     owner: root
     group: root
-  register: onepassword_repo_result
+  when: not onepassword_sources_stat.stat.exists
+  register: onepassword_repo_installed
 
 - name: Remove legacy 1password.list if present
   tags: 1password
@@ -78,4 +86,4 @@
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: onepassword_repo_result is changed or onepassword_legacy_repo_removed is changed
+  when: onepassword_repo_installed is changed or onepassword_legacy_repo_removed is changed
