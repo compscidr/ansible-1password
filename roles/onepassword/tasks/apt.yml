@@ -43,10 +43,39 @@
   ansible.builtin.set_fact:
     onepassword_deb_arch: "{{ [ansible_facts['architecture']] | map('extract', onepassword_deb_architecture) | first }}"
 
-- name: Install 1password repo
+# Write the repo file directly in deb822 format. `apt_repository` has
+# a roundtrip comparison that newer ansible-core / apt tooling flags as
+# `changed` on every run even when the contents are equivalent, which
+# breaks idempotence. `copy` writes exact bytes and compares by hash,
+# so it's reliably idempotent.
+- name: Install 1password repo (deb822)
   tags: 1password
   become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [arch={{ onepassword_deb_arch }} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/{{ onepassword_deb_arch }} stable main"
-    state: present
-    filename: 1password
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/1password.sources
+    content: |
+      Types: deb
+      URIs: https://downloads.1password.com/linux/debian/{{ onepassword_deb_arch }}
+      Suites: stable
+      Components: main
+      Architectures: {{ onepassword_deb_arch }}
+      Signed-By: /usr/share/keyrings/1password-archive-keyring.gpg
+    mode: '0644'
+    owner: root
+    group: root
+  register: onepassword_repo_result
+
+- name: Remove legacy 1password.list if present
+  tags: 1password
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/1password.list
+    state: absent
+  register: onepassword_legacy_repo_removed
+
+- name: Update apt cache after 1password repo changes
+  tags: 1password
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: onepassword_repo_result is changed or onepassword_legacy_repo_removed is changed
