@@ -306,8 +306,8 @@
         cmd: |
           set -o pipefail
           echo "=== Chrome Profile Structure ===" && \
-          find /tmp/chrome-test-profile -type f -name "*.json" -o -name "*.crx" \
-            -o -name "*1password*" -o -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -20
+          find /tmp/chrome-test-profile -type f \( -name "*.json" -o -name "*.crx" \
+            -o -name "*1password*" -o -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" \) | head -20
         executable: /bin/bash
       register: chrome_profile_debug
       when: chrome_available | default(false)
@@ -419,8 +419,8 @@
         cmd: |
           set -o pipefail
           echo "=== Firefox Profile Structure ===" && \
-          find /tmp/firefox-test-profile -type f -name "*.json" -o -name "*.xpi" \
-            -o -name "*1password*" -o -name "*d634138d*" | head -20
+          find /tmp/firefox-test-profile -type f \( -name "*.json" -o -name "*.xpi" \
+            -o -name "*1password*" -o -name "*d634138d*" \) | head -20
         executable: /bin/bash
       register: firefox_profile_debug
       when: firefox_available | default(false)
