@@ -169,7 +169,7 @@
     - name: Debug Chrome check result
       ansible.builtin.debug:
         msg: "Chrome check: rc={{ chrome_check.rc }}, stdout={{ chrome_check.stdout }}, stderr={{ chrome_check.stderr | default('') }}"
-      
+
     - name: Set chrome_available fact
       ansible.builtin.set_fact:
         chrome_available: "{{ chrome_check.stdout != 'not found' and chrome_check.rc == 0 }}"
@@ -212,7 +212,7 @@
     - name: Debug Firefox check result
       ansible.builtin.debug:
         msg: "Firefox check: rc={{ firefox_check.rc }}, stdout={{ firefox_check.stdout }}"
-      
+
     - name: Set firefox_available fact
       ansible.builtin.set_fact:
         firefox_available: "{{ 'firefox' in firefox_check.stdout and firefox_check.rc == 0 }}"
@@ -228,18 +228,19 @@
     - name: Launch Chrome with Xvfb and wait for extension installation
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           # Start Xvfb
           Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
           XVFB_PID=$!
           export DISPLAY=:99
-          
+
           # Wait for X server to start
           sleep 3
-          
+
           # Launch Chrome in GUI mode (not headless) with the profile
           google-chrome-stable --disable-gpu --no-sandbox --user-data-dir=/tmp/chrome-test-profile --new-window about:blank > /tmp/chrome-headed.log 2>&1 &
           CHROME_PID=$!
-          
+
           # Wait up to 3 minutes for extension to be installed, checking every 10 seconds
           echo "Waiting for Chrome extension installation..."
           for i in {1..18}; do
@@ -251,18 +252,19 @@
               break
             fi
           done
-          
+
           # Close Chrome gracefully
           kill $CHROME_PID 2>/dev/null || true
           sleep 3
           pkill -9 chrome 2>/dev/null || true
-          
+
           # Stop Xvfb
           kill $XVFB_PID 2>/dev/null || true
-          
+
           # Final check
           FINAL_COUNT=$(find /tmp/chrome-test-profile -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" 2>/dev/null | wc -l)
           echo "Final extension file count: $FINAL_COUNT"
+        executable: /bin/bash
       register: chrome_headed_result
       when: chrome_available | default(false)
       changed_when: false
@@ -270,7 +272,7 @@
 
     - name: Check Chrome headed logs
       ansible.builtin.shell:
-        cmd: cat /tmp/chrome-headed.log 2>/dev/null | head -50 || echo "No log file"
+        cmd: head -50 /tmp/chrome-headed.log 2>/dev/null || echo "No log file"
       register: chrome_headed_logs
       when: chrome_available | default(false)
       changed_when: false
@@ -284,7 +286,7 @@
     - name: Check for Chrome extension directory
       ansible.builtin.shell:
         cmd: |
-          find /tmp/chrome-test-profile -type d -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -1
+          find /tmp/chrome-test-profile -type d -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" -print -quit
       register: chrome_extension_dir
       when: chrome_available | default(false)
       changed_when: false
@@ -302,8 +304,11 @@
     - name: List Chrome profile contents for debugging
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           echo "=== Chrome Profile Structure ===" && \
-          find /tmp/chrome-test-profile -type f -name "*.json" -o -name "*.crx" -o -name "*1password*" -o -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" | head -20
+          find /tmp/chrome-test-profile -type f \( -name "*.json" -o -name "*.crx" \
+            -o -name "*1password*" -o -name "*aeblfdkhhhdcdjpifhhbdiojplfjncoa*" \) | head -20
+        executable: /bin/bash
       register: chrome_profile_debug
       when: chrome_available | default(false)
       changed_when: false
@@ -329,7 +334,9 @@
           - Extension directories found: {{ chrome_ext_files.matched | default(0) }}
           - Extension directory: {{ chrome_extension_dir.stdout if chrome_extension_dir.stdout else 'Not found' }}
           - Extension in Preferences: {{ chrome_prefs_check.stdout }}
-          - Profile debug info: {{ chrome_profile_debug.stdout_lines | default([]) | join(', ') if chrome_profile_debug.stdout_lines | default([]) | length > 0 else 'No extension files found' }}
+          - Profile debug info: {{ chrome_profile_debug.stdout_lines | default([]) | join(', ')
+                                   if chrome_profile_debug.stdout_lines | default([]) | length > 0
+                                   else 'No extension files found' }}
       when: chrome_available | default(false)
 
     # Test Firefox extension installation with headed browser using Xvfb
@@ -343,18 +350,19 @@
     - name: Launch Firefox with Xvfb and wait for extension installation
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           # Start Xvfb
           Xvfb :98 -screen 0 1920x1080x24 > /dev/null 2>&1 &
           XVFB_PID=$!
           export DISPLAY=:98
-          
+
           # Wait for X server to start
           sleep 3
-          
+
           # Launch Firefox in GUI mode (not headless) with the profile
           firefox --new-instance --profile /tmp/firefox-test-profile about:blank > /tmp/firefox-headed.log 2>&1 &
           FIREFOX_PID=$!
-          
+
           # Wait up to 3 minutes for extension to be installed, checking every 10 seconds
           echo "Waiting for Firefox extension installation..."
           for i in {1..18}; do
@@ -366,18 +374,19 @@
               break
             fi
           done
-          
+
           # Close Firefox gracefully
           kill $FIREFOX_PID 2>/dev/null || true
           sleep 3
           pkill -9 firefox 2>/dev/null || true
-          
+
           # Stop Xvfb
           kill $XVFB_PID 2>/dev/null || true
-          
+
           # Final check
           FINAL_COUNT=$(find /tmp/firefox-test-profile -name "*d634138d-c276-4fc8-924b-40a0ea21d284*" 2>/dev/null | wc -l)
           echo "Final extension file count: $FINAL_COUNT"
+        executable: /bin/bash
       register: firefox_headed_result
       when: firefox_available | default(false)
       changed_when: false
@@ -385,7 +394,7 @@
 
     - name: Check Firefox headed logs
       ansible.builtin.shell:
-        cmd: cat /tmp/firefox-headed.log 2>/dev/null | head -50 || echo "No log file"
+        cmd: head -50 /tmp/firefox-headed.log 2>/dev/null || echo "No log file"
       register: firefox_headed_logs
       when: firefox_available | default(false)
       changed_when: false
@@ -408,8 +417,11 @@
     - name: List Firefox profile contents for debugging
       ansible.builtin.shell:
         cmd: |
+          set -o pipefail
           echo "=== Firefox Profile Structure ===" && \
-          find /tmp/firefox-test-profile -type f -name "*.json" -o -name "*.xpi" -o -name "*1password*" -o -name "*d634138d*" | head -20
+          find /tmp/firefox-test-profile -type f \( -name "*.json" -o -name "*.xpi" \
+            -o -name "*1password*" -o -name "*d634138d*" \) | head -20
+        executable: /bin/bash
       register: firefox_profile_debug
       when: firefox_available | default(false)
       changed_when: false
@@ -434,7 +446,9 @@
           Firefox Extension Verification:
           - Extension files found: {{ firefox_ext_files.matched | default(0) }}
           - Extension in extensions.json: {{ firefox_ext_check.stdout }}
-          - Profile debug info: {{ firefox_profile_debug.stdout_lines | default([]) | join(', ') if firefox_profile_debug.stdout_lines | default([]) | length > 0 else 'No extension files found' }}
+          - Profile debug info: {{ firefox_profile_debug.stdout_lines | default([]) | join(', ')
+                                   if firefox_profile_debug.stdout_lines | default([]) | length > 0
+                                   else 'No extension files found' }}
       when: firefox_available | default(false)
 
     - name: Display verification summary
@@ -443,22 +457,32 @@
           ========================================
           1Password Browser Extension Verification
           ========================================
-          
+
           ✓ Chrome Policy Configuration:
             - Policy file created: {{ chrome_policy_check.stat.exists }}
             - Extension ID: aeblfdkhhhdcdjpifhhbdiojplfjncoa
             - Installation mode: normal_installed (user can uninstall)
             - Update URL: {{ chrome_policy_json.ExtensionSettings['aeblfdkhhhdcdjpifhhbdiojplfjncoa'].update_url }}
-            - Headed browser test (Xvfb): {{ 'Chrome installed, extension files found: ' + (chrome_ext_files.matched | default(0) | string) if chrome_available | default(false) else 'Chrome not available for testing' }}
-            - Extension verification: {{ 'VERIFIED - Extension installed successfully!' if (chrome_ext_files.matched | default(0) > 0 or 'aeblfdkhhhdcdjpifhhbdiojplfjncoa' in chrome_prefs_check.stdout | default('')) else 'Extension configured via policy (may require additional time for download)' }}
-          
+            - Headed browser test (Xvfb): {{ 'Chrome installed, extension files found: ' + (chrome_ext_files.matched | default(0) | string)
+                                             if chrome_available | default(false)
+                                             else 'Chrome not available for testing' }}
+            - Extension verification: {{ 'VERIFIED - Extension installed successfully!'
+                                         if (chrome_ext_files.matched | default(0) > 0
+                                             or 'aeblfdkhhhdcdjpifhhbdiojplfjncoa' in chrome_prefs_check.stdout | default(''))
+                                         else 'Extension configured via policy (may require additional time for download)' }}
+
           ✓ Firefox Policy Configuration:
             - Policy file created: {{ firefox_policy_check.stat.exists }}
             - Extension ID: {d634138d-c276-4fc8-924b-40a0ea21d284}
             - Installation mode: normal_installed (user can uninstall)
             - Install URL: {{ firefox_policy_json.policies.ExtensionSettings['{d634138d-c276-4fc8-924b-40a0ea21d284}'].install_url }}
-            - Headed browser test (Xvfb): {{ 'Firefox installed, extension files found: ' + (firefox_ext_files.matched | default(0) | string) if firefox_available | default(false) else 'Firefox not available for testing' }}
-            - Extension verification: {{ 'VERIFIED - Extension installed successfully!' if (firefox_ext_files.matched | default(0) > 0 or 'd634138d-c276-4fc8-924b-40a0ea21d284' in firefox_ext_check.stdout | default('')) else 'Extension configured via policy (may require additional time for download)' }}
-          
+            - Headed browser test (Xvfb): {{ 'Firefox installed, extension files found: ' + (firefox_ext_files.matched | default(0) | string)
+                                             if firefox_available | default(false)
+                                             else 'Firefox not available for testing' }}
+            - Extension verification: {{ 'VERIFIED - Extension installed successfully!'
+                                         if (firefox_ext_files.matched | default(0) > 0
+                                             or 'd634138d-c276-4fc8-924b-40a0ea21d284' in firefox_ext_check.stdout | default(''))
+                                         else 'Extension configured via policy (may require additional time for download)' }}
+
           Note: Extensions are configured to auto-install when browsers launch.
           Headed browser testing with Xvfb (virtual display) validates the full installation process.
