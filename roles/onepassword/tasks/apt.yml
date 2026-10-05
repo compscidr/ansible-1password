@@ -73,6 +73,21 @@
   when: not onepassword_sources_stat.stat.exists
   register: onepassword_repo_installed
 
+# do-release-upgrade disables every third-party source by adding
+# `Enabled: no`, and the write-once task above never revisits the file, so
+# after an Ubuntu release upgrade 1password silently stops updating. Undo
+# exactly that and nothing else, so this can't fight whatever else rewrites
+# the file.
+- name: Re-enable 1password repo disabled by a release upgrade
+  tags: 1password
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/1password.sources
+    regexp: '^Enabled:\s*no\s*$'
+    state: absent
+  when: onepassword_sources_stat.stat.exists
+  register: onepassword_repo_reenabled
+
 - name: Remove legacy 1password.list if present
   tags: 1password
   become: true
@@ -86,4 +101,7 @@
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: onepassword_repo_installed is changed or onepassword_legacy_repo_removed is changed
+  when: >-
+    onepassword_repo_installed is changed
+    or onepassword_repo_reenabled is changed
+    or onepassword_legacy_repo_removed is changed
